@@ -1,0 +1,54 @@
+#include "math_utils.h"
+
+float ComputePoseDistance(const cv::Mat_<float> t1, const cv::Mat_<float> t2)
+{
+	return std::sqrt(std::pow(t1(0,0) - t2(0,0), 2) +
+					 std::pow(t1(1,0) - t2(1,0), 2) +
+					 std::pow(t1(2,0) - t2(2,0), 2));
+}
+
+cv::Point2f ObservePoint(const Point& p, const cv::Mat_<float>& K)
+{
+	const float u = K(0,0) * (p.x / p.z) + K(0,2);
+	const float v = K(1,1) * (p.y / p.z) + K(1,2);
+	return cv::Point2f(u, v);
+}
+
+Point ProjectPointAtDepth(const cv::Point2f& pixel, const cv::Mat_<float>& K, const float depth)
+{
+	Point p;
+	p.x = depth * (pixel.x - K(0,2)) / K(0,0);
+	p.y = depth * (pixel.y - K(1,2)) / K(1,1);
+	p.z = depth;
+	return p;
+}
+
+Point TransformPointFromWorldToCam(const cv::Mat_<float>& R, const cv::Mat_<float>& t, const Point& p)
+{
+	cv::Mat_<float> p_world = cv::Mat::eye(3, 1, CV_32F);
+	p_world << p.x, p.y, p.z;
+	cv::Mat_<float> p_cam = R.inv() * (p_world - t);
+	return Point(p_cam(0,0), p_cam(1,0), p_cam(2,0));
+}
+
+Point TransformPointFromCamToWorld(const cv::Mat_<float>& R, const cv::Mat_<float>& t, const Point& p)
+{
+	cv::Mat_<float> p_cam = cv::Mat::eye(3, 1, CV_32F);
+	p_cam << p.x, p.y, p.z;
+	cv::Mat_<float> p_world = R * p_world + t;
+	return Point(p_world(0,0), p_world(1,0), p_world(2,0));
+}
+
+float ComputeTriangulationAngle(const Point& p, const cv::Mat_<float>& t_ref, const cv::Mat_<float>& t_src)
+{
+	cv::Vec3f v1(t_ref(0,0) - p.x, t_ref(1,0) - p.y, t_ref(2,0) - p.z);
+	cv::Vec3f v2(t_src(0,0) - p.x, t_src(1,0) - p.y, t_src(2,0) - p.z);
+	cv::Vec3f v1_norm = cv::normalize(v1);
+	cv::Vec3f v2_norm = cv::normalize(v2);
+	return (180.0f / M_PI) * acosf(v1_norm.dot(v2_norm));
+}
+
+Point TransformPointFromFLUToRDF(const Point& p)
+{
+	return Point(-p.y, -p.z, p.x);
+}
