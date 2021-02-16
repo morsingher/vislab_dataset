@@ -7,6 +7,8 @@
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include <chrono>
+#include <unordered_map>
 #include <opencv2/opencv.hpp>
 
 #define WITHOUT_NUMPY
@@ -49,6 +51,7 @@ struct Cluster
 {
 	std::vector<int> point_idx;
 	std::vector<int> camera_idx;
+	std::unordered_map<int, std::vector<Neighbor>> neighbors;
 };
 
 #endif

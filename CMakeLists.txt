@@ -12,9 +12,10 @@ include_directories(${OpenCV_INCLUDE_DIRS}
 					src/include)
 
 add_executable(vislab_dataset 
-			   src/include/io_utils.cpp 
+			   src/include/input_dataset.cpp 
 			   src/include/math_utils.cpp
 			   src/include/view_clustering.cpp
+			   src/include/parameters.cpp
 			   src/main.cpp)
 
 target_link_libraries(vislab_dataset ${OpenCV_LIBS} ${PYTHON_LIBRARIES})

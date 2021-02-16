@@ -1,4 +1,6 @@
-#include "io_utils.h"
+#include "input_dataset.h"
+
+namespace plt = matplotlibcpp;
 
 bool InputDataset::LoadPoints(const std::string& filename)
 {
@@ -160,11 +162,10 @@ bool InputDataset::LoadPoses(const std::string& filename)
 	return true;
 }
 
-std::vector<int> InputDataset::FilterPoses(const float min_dist)
+void InputDataset::FilterPoses(const float min_dist)
 {
 	int prev = 0;
-	std::vector<int> filtered_poses;
-	filtered_poses.push_back(prev); 
+	filt.push_back(prev); 
 
 	for (int i = 1; i < images.size(); i++)
 	{
@@ -172,15 +173,12 @@ std::vector<int> InputDataset::FilterPoses(const float min_dist)
 		if (dist > min_dist)
 		{
 			prev = i;
-			filtered_poses.push_back(prev);
+			filt.push_back(prev);
 		}
 	} 
-
-	std::cout << "Filtered " << filtered_poses.size() << " poses" << std::endl;
-	return filtered_poses;
 }
 
-void InputDataset::BuildFeatureTracks(const std::vector<int>& filt)
+void InputDataset::BuildFeatureTracks()
 {
 	for (const auto& i : filt)
 	{
@@ -191,12 +189,10 @@ void InputDataset::BuildFeatureTracks(const std::vector<int>& filt)
 	}
 }
 
-void InputDataset::ComputeDepthRange(const std::vector<int>& filt)
+void InputDataset::ComputeDepthRange()
 {
 	for (const auto& i : filt)
 	{
-		std::cout << "Computing depth range for image " << i << std::endl;
-
 		float max_depth = 0.0f;
 		float min_depth = std::numeric_limits<float>::max();
 
@@ -217,65 +213,10 @@ void InputDataset::ComputeDepthRange(const std::vector<int>& filt)
 
 		images[i].min_depth = min_depth;
 		images[i].max_depth = max_depth;
-
-		std::cout << "Computed range: (" << min_depth << ", " << max_depth << ")" << std::endl;
 	}
 }
 
-void InputDataset::ComputeNeighbors(const std::vector<int>& filt, 
-									const float sigma_0, 
-									const float sigma_1, 
-									const float theta_0)
-{
-	for (const auto& ref : filt)
-	{
-		std::cout << "Computing neighbors for image " << ref << std::endl;
-
-		std::vector<int> idx_ref;
-		for (const auto& f : images[ref].features)
-		{
-			idx_ref.push_back(f.point_idx);
-		}
-
-		for (const auto& src : filt)
-		{
-			if (ref != src)
-			{
-				std::vector<int> idx_comm;
-				for (const auto& f : images[src].features)
-				{
-					const int idx_src = f.point_idx;
-					if (std::find(idx_ref.begin(), idx_ref.end(), idx_src) != idx_ref.end())
-					{
-						idx_comm.push_back(idx_src);
-					}
-				}
-
-				const float score = ComputeViewSelectionScore(idx_comm, ref, src, sigma_0, sigma_1, theta_0);
-				if (score > 0.0f)
-				{
-					images[ref].neighbors.push_back(Neighbor(src, score));
-					// std::cout << "Image " << ref << " and image " << src << " have " << idx_comm.size() 
-					// 		  << " features in common and the score is " << score << std::endl;
-					// std::cin.get();
-				}
-			}
-		}
-
-		const auto lambda_sort = [](const Neighbor& n1, const Neighbor& n2) { return n1.score > n2.score; };
-		std::sort(images[ref].neighbors.begin(), images[ref].neighbors.end(), lambda_sort);
-		images[ref].neighbors.resize(10);
-
-		// std::cout << "Neighbors found for image " << ref << " are:" << std::endl;
-		// for (const auto& n : images[ref].neighbors)
-		// {
-		// 	std::cout << "Image " << n.idx << " with score " << n.score << std::endl;
-		// }
-		// std::cin.get();
-	}
-}
-
-bool InputDataset::WriteCameraFiles(const std::vector<int>& filt, const std::string& path)
+bool InputDataset::WriteCameraFiles(const std::string& path)
 {
 	for (const auto& i : filt)
 	{
@@ -318,56 +259,38 @@ bool InputDataset::WriteCameraFiles(const std::vector<int>& filt, const std::str
 	return true;
 }
 
-bool InputDataset::WriteNeighborsFile(const std::vector<int>& filt, const std::string& path)
+void InputDataset::PlotPointCloud()
 {
-	const std::string filename = path + std::string("pair.txt");
-
-	std::ofstream neighbors_file_stream(filename, std::ios::out);
-	if (!neighbors_file_stream)
+	std::vector<float> x, z;
+	for (const auto& p : points)
 	{
-		std::cout << "Failed to open neighbors file" << std::endl;
-		return false;
+		x.push_back(p.x);
+		z.push_back(p.z);
 	}
-
-	neighbors_file_stream << filt.size() << std::endl;
-
-	for (const auto& i : filt)
-	{
-		std::cout << "Writing neighbors line for image " << i << std::endl;
-
-		neighbors_file_stream << i << std::endl;
-		neighbors_file_stream << 10 << " ";
-		for (const auto& n : images[i].neighbors)
-		{
-			neighbors_file_stream << n.idx << " " << n.score << " ";
-		}
-		neighbors_file_stream << std::endl;
-	}
-
-	return true;
+	plt::plot(x, z, "o ");
+	plt::show();
 }
 
-float InputDataset::ComputeViewSelectionScore(const std::vector<int>& idx, 
-											  const int ref, 
-											  const int src,
-											  const float sigma_0, 
-											  const float sigma_1, 
-											  const float theta_0)
+void InputDataset::PlotTrajectory()
 {
-	float score = 0.0f;
-	for (const auto& id : idx)
+	std::vector<float> x, z;
+	for (const auto& img : images)
 	{
-		float theta = ComputeTriangulationAngle(points[id], images[ref].t, images[src].t);
-		// std::cout << "Triangulation angle: " << theta << std::endl;
-		// std::cin.get();
-		if (theta <= theta_0)
-		{
-			score += std::exp(- std::pow(theta - theta_0, 2) / (2 * std::pow(sigma_0, 2)));
-		}
-		else
-		{
-			score += std::exp(- std::pow(theta - theta_0, 2) / (2 * std::pow(sigma_1, 2)));
-		}
+		x.push_back(img.t(0,0));
+		z.push_back(img.t(2,0));
 	}
-	return score;
+	plt::plot(x, z, "o ");
+	plt::show();
+}
+
+void InputDataset::PlotFilteredTrajectory()
+{
+	std::vector<float> x, z;
+	for (const auto& i : filt)
+	{
+		x.push_back(images[i].t(0,0));
+		z.push_back(images[i].t(2,0));
+	}
+	plt::plot(x, z, "o ");
+	plt::show();
 }

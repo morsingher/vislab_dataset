@@ -1,0 +1,17 @@
+{
+	"project_path": "/home/marco/vislab_dataset/",
+	"input_folder": "data/",
+	"output_folder": "results/",
+	"poses_file": "outputPose_correct.txt",
+	"points_file": "state.bap",
+	"features_file": "state.bin",
+	"min_difference": 1.0,
+	"block_size": 20,
+	"min_points": 100,
+	"min_cameras": 10,
+	"max_distance": 20.0,
+	"num_neighbors" : 10,
+	"theta_0": 5,
+	"sigma_0": 1,
+	"sigma_1": 10
+}

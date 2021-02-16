@@ -1,9 +1,13 @@
 # vislab_dataset
 
 TODO
-- Move parameters and paths to json
+
 - Play with parameters
-- Set up some plotting functions
 - Visualize features on images
-- Implement view selection for each cluster
-- Maybe a ViewSelection class?
+- Neighbors might be in close clusters
+
+ELAPSED TIME FOR COMPUTING NEIGHBORS
+
+Batch = 820 filtered poses -> 964 s
+Clusters = 63 clusters with 889 poses -> 48 s
+Clusters = 63 clusters with 1832 poses -> 146 s

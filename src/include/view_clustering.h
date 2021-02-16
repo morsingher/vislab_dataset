@@ -1,7 +1,7 @@
 #ifndef VIEW_CLUSTERING_H
 #define VIEW_CLUSTERING_H
 
-#include "io_utils.h"
+#include "input_dataset.h"
 
 class ViewClustering
 {
@@ -11,13 +11,24 @@ class ViewClustering
 public:
 	std::vector<Cluster> clusters;
 	ViewClustering(const InputDataset& input_data) : data(input_data) {};
-	void ClusterViews(const int block_size, const int min_points);
-
+	void ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance);
+	void PlotClusteredPointCloud();
+	void PlotClusteredTrajectory();
+	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
+	// bool WriteNeighborsFile(const std::string& path);
+	
 private:
 	void ComputePointCloudRange();
-	void BuildPointCloudGrid(const int block_size, const int num_blocks_x, const int num_blocks_z);
-	void FilterPointCloudGrid(const int min_points, const int num_blocks_x, const int num_blocks_z);
-	void AssignCamerasToBlock();
+	void AssignPointsToBlock(const int block_size, const int num_blocks_x, const int num_blocks_z);
+	void GroupByPoints(const int min_points, const int num_blocks_x, const int num_blocks_z);
+	void AssignCamerasToBlock(const float max_distance);
+	void GroupByCameras(const int min_cameras, const int num_blocks_x, const int num_blocks_z);
+	float ComputeViewSelectionScore(const std::vector<int>& idx, 
+									const int ref, 
+									const int src,
+									const float sigma_0, 
+									const float sigma_1, 
+									const float theta_0);	
 };
 
 #endif
