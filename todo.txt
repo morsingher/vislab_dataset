@@ -1,0 +1,5 @@
+1) Intrinsic parameters should be read from file rather than hard-coded
+2) Better way to compute min and max element from vector of points
+3) Better way to remove duplicates from a vector of int
+4) Better way to find intersection between feature indices
+5) Optimize multi-threading, which is done very naively

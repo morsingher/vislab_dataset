@@ -14,7 +14,9 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	auto begin = std::chrono::steady_clock::now();
+	// Load parameters
+
+	std::cout << "Loading parameters..." << std::endl;
 
 	Parameters params;
 	if (!params.Load(argv[1]))
@@ -23,9 +25,15 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	std::cout << "Done!" << std::endl << std::endl;;
+
+	// Load input dataset
+
+	std::cout << "Loading input Ambarella dataset..." << std::endl;
+
 	InputDataset dataset;
 
-	// state.bap file
+	// state.bap file (points)
 
 	if(!dataset.LoadPoints(params.points_file))
 	{
@@ -33,7 +41,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	// state.bin file
+	// state.bin file (features)
 
 	if (!dataset.LoadFeatures(params.features_file))
 	{
@@ -41,7 +49,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	// outputPose_correct.txt file
+	// outputPose_correct.txt file (poses)
 
 	if (!dataset.LoadPoses(params.poses_file))
 	{
@@ -49,73 +57,66 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	auto end = std::chrono::steady_clock::now();
-	auto elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Loaded parameters and dataset in " << elapsed_time << " s." << std::endl;
+	std::cout << "Done!" << std::endl << std::endl;
 
 	// Filter out redundant poses
 
-	begin = std::chrono::steady_clock::now();
+	std::cout << "Filtering poses by selecting keyframes..." << std::endl;
 
 	dataset.FilterPoses(params.min_difference);
 
-	std::cout << std::endl;
-	end = std::chrono::steady_clock::now();
-	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Filtered poses in " << elapsed_time << " s." << std::endl;
+	std::cout << "Done! Selected " << dataset.filt.size() << " keyframes" << std::endl << std::endl;
 
 	// Compute depth range
 
-	begin = std::chrono::steady_clock::now();
+	std::cout << "Computing depth range for selected keyframes..." << std::endl;
 
 	dataset.ComputeDepthRange();
 
-	std::cout << std::endl;
-	end = std::chrono::steady_clock::now();
-	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Computed depth range in " << elapsed_time << " s." << std::endl;
+	std::cout << "Done!" << std::endl << std::endl;
 
 	// Assign images to each point and remove useless points
 
-	begin = std::chrono::steady_clock::now();
+	std::cout << "Assigning keyframes to each visible point..." << std::endl;
 
 	dataset.BuildFeatureTracks();
-	const auto lambda_size = [&](const Point& p) { return p.frame_idx.size() == 0; };
-	dataset.points.erase(std::remove_if(dataset.points.begin(), dataset.points.end(), lambda_size), dataset.points.end());
 
-	std::cout << std::endl;
-	end = std::chrono::steady_clock::now();
-	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Built feature tracks in " << elapsed_time << " s." << std::endl;
+	std::cout << "Done! There are " << dataset.points.size() << " visible points" << std::endl << std::endl;
 
 	// Cluster points and cameras
 
-	begin = std::chrono::steady_clock::now();
-	std::cout << std::endl;
+	std::cout << "Clustering points and cameras..." << std::endl;
+
+	auto begin = std::chrono::steady_clock::now();
 
 	ViewClustering view_clustering(dataset);
 	view_clustering.ClusterViews(params.block_size, params.min_points, params.min_cameras, params.max_distance);
 
-	std::cout << std::endl;
-	end = std::chrono::steady_clock::now();
-	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Clustered cameras and points in " << elapsed_time << " s." << std::endl;
+	auto end = std::chrono::steady_clock::now();
+	auto elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+	std::cout << "Done! Built " << view_clustering.clusters.size() << " clusters in " << elapsed_time << " s" << std::endl << std::endl;;
 
 	// Compute neighbors
 
+	std::cout << "Computing neighbors for each cluster (it may take some time)..." << std::endl;
+
 	begin = std::chrono::steady_clock::now();
-	std::cout << std::endl;
 
 	view_clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
-
-	std::cout << std::endl;
+;
 	end = std::chrono::steady_clock::now();
 	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Computed neighbors in " << elapsed_time << " s." << std::endl;
+	std::cout << "Done! Computed neighbors in " << elapsed_time << " s." << std::endl << std::endl;
+
+	// Showing results
+
+	std::cout << "Showing results, press ENTER to exit!" << std::endl;
+	view_clustering.PlotClusters();
+	std::cin.get();
 
 	// Write files for PatchMatchNet
 
-	begin = std::chrono::steady_clock::now();
+	std::cout << "Saving results in PatchMatchNet format..." << std::endl;
 
 	if (!view_clustering.WriteClustersFiles(params.output_folder))
 	{
@@ -123,12 +124,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-	std::cout << std::endl;
-	end = std::chrono::steady_clock::now();
-	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Wrote results to file in " << elapsed_time << " s." << std::endl;
-
-	std::cout << std::endl;
+	std::cout << "Done!" << std::endl << std::endl;
 
 	return EXIT_SUCCESS;
 }

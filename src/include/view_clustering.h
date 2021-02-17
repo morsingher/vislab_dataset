@@ -9,21 +9,24 @@ class ViewClustering
 	float x_min, x_max, z_min, z_max;
 
 public:
+
 	std::vector<Cluster> clusters;
+	
 	ViewClustering(const InputDataset& input_data) : data(input_data) {};
 
 	void ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance);
 	
-	void PlotClusteredPointCloud();
-	void PlotClusteredTrajectory();
-	
 	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
 	
 	bool WriteClustersFiles(const std::string& output_path);
+
+	void PlotClusters();
 	
 private:
+
 	void ComputePointCloudRange();
-	void AssignPointsToBlock(const int block_size, const int num_blocks_x, const int num_blocks_z);
+	
+	void AssignPointsToBlock(const int block_size, const int num_blocks_x);
 	void GroupByPoints(const int min_points, const int num_blocks_x, const int num_blocks_z);
 	void AssignCamerasToBlock(const float max_distance);
 	void GroupByCameras(const int min_cameras, const int num_blocks_x, const int num_blocks_z);
