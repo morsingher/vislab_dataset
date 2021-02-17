@@ -28,6 +28,10 @@ struct Feature
 {
 	uint32_t point_idx;
 	cv::Point2f left, right;
+	bool operator<(const Feature& f)
+	{
+		return point_idx < f.point_idx;
+	}
 };
 
 struct Neighbor

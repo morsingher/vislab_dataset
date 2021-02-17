@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 	begin = std::chrono::steady_clock::now();
 
 	view_clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
-;
+	
 	end = std::chrono::steady_clock::now();
 	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
 	std::cout << "Done! Computed neighbors in " << elapsed_time << " s." << std::endl << std::endl;

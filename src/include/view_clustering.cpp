@@ -24,6 +24,11 @@ void ViewClustering::ClusterViews(const int block_size, const int min_points, co
 
 void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
 {
+	for (auto& img : data.images)
+	{
+		std::sort(img.features.begin(), img.features.end());
+	}
+	
 	std::vector<std::thread> th_vec;
 
 	for (int i = 0; i < clusters.size(); i++)
@@ -257,29 +262,18 @@ void ViewClustering::ComputeNeighborsForCluster(const int i, const int num_neigh
 {
 	for (const auto& ref : clusters[i].camera_idx)
 	{
-		std::vector<int> idx_ref;
-		for (const auto& f : data.images[ref].features)
-		{
-			idx_ref.push_back(f.point_idx);
-		}
-
 		std::vector<Neighbor> n;
 
 		for (const auto& src : clusters[i].camera_idx)
 		{
 			if (ref != src)
 			{
-				std::vector<int> idx_comm;
-				for (const auto& f : data.images[src].features)
-				{
-					const int idx_src = f.point_idx;
-					if (std::find(idx_ref.begin(), idx_ref.end(), idx_src) != idx_ref.end())
-					{
-						idx_comm.push_back(idx_src);
-					}
-				}
+				std::vector<Feature> common_features;
+				std::set_intersection(data.images[ref].features.begin(), data.images[ref].features.end(),
+									  data.images[src].features.begin(), data.images[src].features.end(),
+									  back_inserter(common_features));
 
-				const float score = ComputeViewSelectionScore(idx_comm, ref, src, sigma_0, sigma_1, theta_0);
+				const float score = ComputeViewSelectionScore(common_features, ref, src, sigma_0, sigma_1, theta_0);
 				if (score > 0.0f)
 				{
 					n.push_back(Neighbor(src, score));
@@ -295,7 +289,7 @@ void ViewClustering::ComputeNeighborsForCluster(const int i, const int num_neigh
 	}
 }
 
-float ViewClustering::ComputeViewSelectionScore(const std::vector<int>& idx, 
+float ViewClustering::ComputeViewSelectionScore(const std::vector<Feature>& idx, 
 												const int ref, 
 												const int src,
 												const float sigma_0, 
@@ -303,9 +297,9 @@ float ViewClustering::ComputeViewSelectionScore(const std::vector<int>& idx,
 												const float theta_0)
 {
 	float score = 0.0f;
-	for (const auto& id : idx)
+	for (const auto& f : idx)
 	{
-		float theta = ComputeTriangulationAngle(data.points[id], data.images[ref].t, data.images[src].t);
+		float theta = ComputeTriangulationAngle(data.points[f.point_idx], data.images[ref].t, data.images[src].t);
 		if (theta <= theta_0)
 		{
 			score += std::exp(- std::pow(theta - theta_0, 2) / (2 * std::pow(sigma_0, 2)));

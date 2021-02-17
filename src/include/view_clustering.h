@@ -5,14 +5,14 @@
 
 class ViewClustering
 {
-	const InputDataset& data;
+	InputDataset& data;
 	float x_min, x_max, z_min, z_max;
 
 public:
 
 	std::vector<Cluster> clusters;
 	
-	ViewClustering(const InputDataset& input_data) : data(input_data) {};
+	ViewClustering(InputDataset& input_data) : data(input_data) {};
 
 	void ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance);
 	
@@ -32,7 +32,7 @@ private:
 	void GroupByCameras(const int min_cameras, const int num_blocks_x);
 	
 	void ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
-	float ComputeViewSelectionScore(const std::vector<int>& idx, const int ref, const int src, const float sigma_0, const float sigma_1, const float theta_0);
+	float ComputeViewSelectionScore(const std::vector<Feature>& idx, const int ref, const int src, const float sigma_0, const float sigma_1, const float theta_0);
 	
 	bool WriteCamerasFiles(const std::string& path, const int idx);
 	bool WriteNeighborsFile(const std::string& path, const int idx);
