@@ -211,52 +211,14 @@ void InputDataset::ComputeDepthRange()
 			}
 		}
 
+		if (min_depth < 0 || max_depth < 0)
+		{
+			std::cout << "Weird result on computing depth range" << std::endl;
+		}
+
 		images[i].min_depth = min_depth;
 		images[i].max_depth = max_depth;
 	}
-}
-
-bool InputDataset::WriteCameraFiles(const std::string& path)
-{
-	for (const auto& i : filt)
-	{
-		std::cout << "Writing camera file for image " << i << std::endl;
-
-		char buffer[50];
-		sprintf(buffer, "%.8d_cam.txt", i);
-		const std::string filename = path + std::string(buffer);
-
-		std::ofstream cameras_file_stream(filename, std::ios::out);
-		if (!cameras_file_stream)
-		{
-			std::cout << "Failed to open camera file " << i << std::endl;
-			return false;
-		}
-
-		cameras_file_stream << "extrinsic" << std::endl;
-		cameras_file_stream << images[i].R(0,0) << " " << images[i].R(0,1) << " " 
-							<< images[i].R(0,2) << " " << images[i].t(0,0) << std::endl
-							<< images[i].R(1,0) << " " << images[i].R(1,1) << " " 
-							<< images[i].R(1,2) << " " << images[i].t(1,0) << std::endl
-							<< images[i].R(2,0) << " " << images[i].R(2,1) << " " 
-							<< images[i].R(2,2) << " " << images[i].t(2,0) << std::endl
-							<< 0.0f << " " << 0.0f << " " << 0.0f << " " << 1.0f 
-							<< std::endl << std::endl;
-
-		cameras_file_stream << "intrinsic" << std::endl;
-		cameras_file_stream << images[i].K(0,0) << " " << images[i].K(0,1) 
-							<< " " << images[i].K(0,2) << std::endl
-							<< images[i].K(1,0) << " " << images[i].K(1,1) 
-							<< " " << images[i].K(1,2) << std::endl
-							<< images[i].K(2,0) << " " << images[i].K(2,1) 
-							<< " " << images[i].K(2,2) << std::endl << std::endl;
-
-		cameras_file_stream << images[i].min_depth << " " << images[i].max_depth << std::endl;
-
-		// std::cin.get();
-	}
-
-	return true;
 }
 
 void InputDataset::PlotPointCloud()

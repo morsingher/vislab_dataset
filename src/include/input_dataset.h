@@ -23,10 +23,6 @@ public:
 	void FilterPoses(const float min_dist);
 	void BuildFeatureTracks();
 	void ComputeDepthRange();
-	
-	// Output
-
-	bool WriteCameraFiles(const std::string& path);
 
 	// Visualize
 

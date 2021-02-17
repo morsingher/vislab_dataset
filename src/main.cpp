@@ -64,6 +64,17 @@ int main(int argc, char** argv)
 	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
 	std::cout << "Filtered poses in " << elapsed_time << " s." << std::endl;
 
+	// Compute depth range
+
+	begin = std::chrono::steady_clock::now();
+
+	dataset.ComputeDepthRange();
+
+	std::cout << std::endl;
+	end = std::chrono::steady_clock::now();
+	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+	std::cout << "Computed depth range in " << elapsed_time << " s." << std::endl;
+
 	// Assign images to each point and remove useless points
 
 	begin = std::chrono::steady_clock::now();
@@ -90,17 +101,6 @@ int main(int argc, char** argv)
 	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
 	std::cout << "Clustered cameras and points in " << elapsed_time << " s." << std::endl;
 
-	// Compute depth range
-
-	begin = std::chrono::steady_clock::now();
-
-	dataset.ComputeDepthRange();
-
-	std::cout << std::endl;
-	end = std::chrono::steady_clock::now();
-	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
-	std::cout << "Computed depth range in " << elapsed_time << " s." << std::endl;
-
 	// Compute neighbors
 
 	begin = std::chrono::steady_clock::now();
@@ -113,23 +113,20 @@ int main(int argc, char** argv)
 	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
 	std::cout << "Computed neighbors in " << elapsed_time << " s." << std::endl;
 
-	// Write cameras to file as required by PatchMatchNet
+	// Write files for PatchMatchNet
 
-	// std::string path("/home/marco/vislab_dataset/results/cams_1/");
-	// if (!dataset.WriteCameraFiles( path))
-	// {
-	// 	std::cout << "Failed to write cameras" << std::endl;
-	// 	return EXIT_FAILURE;
-	// }
+	begin = std::chrono::steady_clock::now();
 
-	// Write view selection results
+	if (!view_clustering.WriteClustersFiles(params.output_folder))
+	{
+		std::cout << "Failed to save results" << std::endl;
+		return EXIT_FAILURE;
+	}
 
-	// path = std::string("/home/marco/vislab_dataset/results/");
-	// if (!dataset.WriteNeighborsFile( path))
-	// {
-	// 	std::cout << "Failed to write neighbors" << std::endl;
-	// 	return EXIT_FAILURE;
-	// }
+	std::cout << std::endl;
+	end = std::chrono::steady_clock::now();
+	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
+	std::cout << "Wrote results to file in " << elapsed_time << " s." << std::endl;
 
 	std::cout << std::endl;
 

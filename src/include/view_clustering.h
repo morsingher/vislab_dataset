@@ -15,7 +15,7 @@ public:
 	void PlotClusteredPointCloud();
 	void PlotClusteredTrajectory();
 	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
-	// bool WriteNeighborsFile(const std::string& path);
+	bool WriteClustersFiles(const std::string& output_path);
 	
 private:
 	void ComputePointCloudRange();
@@ -23,12 +23,9 @@ private:
 	void GroupByPoints(const int min_points, const int num_blocks_x, const int num_blocks_z);
 	void AssignCamerasToBlock(const float max_distance);
 	void GroupByCameras(const int min_cameras, const int num_blocks_x, const int num_blocks_z);
-	float ComputeViewSelectionScore(const std::vector<int>& idx, 
-									const int ref, 
-									const int src,
-									const float sigma_0, 
-									const float sigma_1, 
-									const float theta_0);	
+	float ComputeViewSelectionScore(const std::vector<int>& idx, const int ref, const int src, const float sigma_0, const float sigma_1, const float theta_0);
+	bool WriteCamerasFiles(const std::string& path, const int idx);
+	bool WriteNeighborsFile(const std::string& path, const int idx);
 };
 
 #endif

@@ -131,34 +131,38 @@ void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma
 	}
 }
 
-// bool ViewClustering::WriteNeighborsFile(const std::string& path)
-// {
-// 	const std::string filename = path + std::string("pair.txt");
+bool ViewClustering::WriteClustersFiles(const std::string& output_path)
+{
+	if (mkdir(output_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+	{
+		std::cout << "Failed to create the results directory" << std::endl;
+		return false;
+	}
 
-// 	std::ofstream neighbors_file_stream(filename, std::ios::out);
-// 	if (!neighbors_file_stream)
-// 	{
-// 		std::cout << "Failed to open neighbors file" << std::endl;
-// 		return false;
-// 	}
+	for (int i = 0; i < clusters.size(); i++)
+	{
+		const std::string cluster_folder = output_path + "cluster_" + std::to_string(i) + "/";
+		if (mkdir(cluster_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+		{
+			std::cout << "Failed to create the directory for cluster " << i << std::endl;
+			return false;
+		}
 
-// 	neighbors_file_stream << filt.size() << std::endl;
+		if (!WriteCamerasFiles(cluster_folder, i))
+		{
+			std::cout << "Failed to write cameras files for cluster " << i << std::endl;
+			return false;
+		}
 
-// 	for (const auto& i : filt)
-// 	{
-// 		std::cout << "Writing neighbors line for image " << i << std::endl;
+		if (!WriteNeighborsFile(cluster_folder, i))
+		{
+			std::cout << "Failed to write neighbors file for cluster " << i << std::endl;
+			return false;
+		}
+	}
 
-// 		neighbors_file_stream << i << std::endl;
-// 		neighbors_file_stream << 10 << " ";
-// 		for (const auto& n : images[i].neighbors)
-// 		{
-// 			neighbors_file_stream << n.idx << " " << n.score << " ";
-// 		}
-// 		neighbors_file_stream << std::endl;
-// 	}
-
-// 	return true;
-// }
+	return true;
+}
 
 void ViewClustering::AssignPointsToBlock(const int block_size, const int num_blocks_x, const int num_blocks_z)
 {
@@ -357,4 +361,79 @@ float ViewClustering::ComputeViewSelectionScore(const std::vector<int>& idx,
 		}
 	}
 	return score;
+}
+
+bool ViewClustering::WriteNeighborsFile(const std::string& path, const int idx)
+{
+	const std::string filename = path + std::string("pair.txt");
+
+	std::ofstream neighbors_file_stream(filename, std::ios::out);
+	if (!neighbors_file_stream)
+	{
+		std::cout << "Failed to open neighbors file for cluster " << idx << std::endl;
+		return false;
+	}
+
+	Cluster& c = clusters[idx];
+
+	neighbors_file_stream << c.camera_idx.size() << std::endl;
+
+	for (const auto& i : c.camera_idx)
+	{
+		neighbors_file_stream << i << std::endl;
+		neighbors_file_stream << 10 << " ";
+		for (auto& n : c.neighbors[i])
+		{
+			neighbors_file_stream << n.idx << " " << n.score << " ";
+		}
+		neighbors_file_stream << std::endl;
+	}
+
+	return true;
+}
+
+bool ViewClustering::WriteCamerasFiles(const std::string& path, const int idx)
+{
+	const std::string cam_folder = path + "cams_1/";
+	if (mkdir(cam_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+	{
+		std::cout << "Failed to create the directory for cluster " << idx << std::endl;
+		return false;
+	}
+
+	for (const auto& i : clusters[idx].camera_idx)
+	{
+		char buffer[50];
+		sprintf(buffer, "%.8d_cam.txt", i);
+		const std::string filename = cam_folder + std::string(buffer);
+
+		std::ofstream cameras_file_stream(filename, std::ios::out);
+		if (!cameras_file_stream)
+		{
+			std::cout << "Failed to open camera file " << i << " for cluster " << idx << std::endl;
+			return false;
+		}
+
+		cameras_file_stream << "extrinsic" << std::endl;
+		cameras_file_stream << data.images[i].R(0,0) << " " << data.images[i].R(0,1) << " " 
+							<< data.images[i].R(0,2) << " " << data.images[i].t(0,0) << std::endl
+							<< data.images[i].R(1,0) << " " << data.images[i].R(1,1) << " " 
+							<< data.images[i].R(1,2) << " " << data.images[i].t(1,0) << std::endl
+							<< data.images[i].R(2,0) << " " << data.images[i].R(2,1) << " " 
+							<< data.images[i].R(2,2) << " " << data.images[i].t(2,0) << std::endl
+							<< 0.0f << " " << 0.0f << " " << 0.0f << " " << 1.0f 
+							<< std::endl << std::endl;
+
+		cameras_file_stream << "intrinsic" << std::endl;
+		cameras_file_stream << data.images[i].K(0,0) << " " << data.images[i].K(0,1) 
+							<< " " << data.images[i].K(0,2) << std::endl
+							<< data.images[i].K(1,0) << " " << data.images[i].K(1,1) 
+							<< " " << data.images[i].K(1,2) << std::endl
+							<< data.images[i].K(2,0) << " " << data.images[i].K(2,1) 
+							<< " " << data.images[i].K(2,2) << std::endl << std::endl;
+
+		cameras_file_stream << data.images[i].min_depth << " " << data.images[i].max_depth << std::endl;
+	}
+
+	return true;
 }
