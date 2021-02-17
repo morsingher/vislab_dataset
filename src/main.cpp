@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 	begin = std::chrono::steady_clock::now();
 	std::cout << std::endl;
 
-	view_clustering.ComputeNeighbors(params.num_neighbors, params.theta_0, params.sigma_0, params.sigma_1);
+	view_clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
 
 	std::cout << std::endl;
 	end = std::chrono::steady_clock::now();

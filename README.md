@@ -1,7 +1,6 @@
 # vislab_dataset
 
-INPUT: Ambarella dataset
-OUTPUT: PatchMatchNet dataset
+INPUT: Ambarella dataset, OUTPUT: PatchMatchNet dataset
 
 STEPS
 

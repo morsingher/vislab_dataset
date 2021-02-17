@@ -85,49 +85,62 @@ void ViewClustering::PlotClusteredTrajectory()
 void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
 {	
 
+	std::vector<std::thread> th_vec;
+
+	std::cout << "Computing neighbors..." << std::endl;
+
 	for (int i = 0; i < clusters.size(); i++)
 	{
-		std::cout << "Computing neighbors for cluster " << i << " with " << clusters[i].camera_idx.size() << " cameras" << std::endl;
+		th_vec.push_back(std::thread(&ViewClustering::ComputeNeighborsForCluster, this, i, num_neighbors, sigma_0, sigma_1, theta_0));
+		// ComputeNeighborsForCluster(i, num_neighbors, sigma_0, sigma_1, theta_0);
+	}
 
-		for (const auto& ref : clusters[i].camera_idx)
+	for (auto& th : th_vec)
+	{
+		th.join();
+	}
+}
+
+void ViewClustering::ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
+{
+	for (const auto& ref : clusters[i].camera_idx)
+	{
+		std::vector<int> idx_ref;
+		for (const auto& f : data.images[ref].features)
 		{
-			std::vector<int> idx_ref;
-			for (const auto& f : data.images[ref].features)
-			{
-				idx_ref.push_back(f.point_idx);
-			}
+			idx_ref.push_back(f.point_idx);
+		}
 
-			std::vector<Neighbor> n;
+		std::vector<Neighbor> n;
 
-			for (const auto& src : clusters[i].camera_idx)
+		for (const auto& src : clusters[i].camera_idx)
+		{
+			if (ref != src)
 			{
-				if (ref != src)
+				std::vector<int> idx_comm;
+				for (const auto& f : data.images[src].features)
 				{
-					std::vector<int> idx_comm;
-					for (const auto& f : data.images[src].features)
+					const int idx_src = f.point_idx;
+					if (std::find(idx_ref.begin(), idx_ref.end(), idx_src) != idx_ref.end())
 					{
-						const int idx_src = f.point_idx;
-						if (std::find(idx_ref.begin(), idx_ref.end(), idx_src) != idx_ref.end())
-						{
-							idx_comm.push_back(idx_src);
-						}
-					}
-
-					const float score = ComputeViewSelectionScore(idx_comm, ref, src, sigma_0, sigma_1, theta_0);
-					if (score > 0.0f)
-					{
-
-						n.push_back(Neighbor(src, score));
+						idx_comm.push_back(idx_src);
 					}
 				}
+
+				const float score = ComputeViewSelectionScore(idx_comm, ref, src, sigma_0, sigma_1, theta_0);
+				if (score > 0.0f)
+				{
+
+					n.push_back(Neighbor(src, score));
+				}
 			}
-
-			const auto lambda_sort = [](const Neighbor& n1, const Neighbor& n2) { return n1.score > n2.score; };
-			std::sort(n.begin(), n.end(), lambda_sort);
-			n.resize(num_neighbors);
-
-			clusters[i].neighbors.insert(std::make_pair(ref, n));
 		}
+
+		const auto lambda_sort = [](const Neighbor& n1, const Neighbor& n2) { return n1.score > n2.score; };
+		std::sort(n.begin(), n.end(), lambda_sort);
+		n.resize(num_neighbors);
+
+		clusters[i].neighbors.insert(std::make_pair(ref, n));
 	}
 }
 

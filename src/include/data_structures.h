@@ -10,6 +10,7 @@
 #include <chrono>
 #include <unordered_map>
 #include <cstdlib>
+#include <thread>
 #include <opencv2/opencv.hpp>
 
 #define WITHOUT_NUMPY

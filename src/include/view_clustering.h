@@ -11,10 +11,14 @@ class ViewClustering
 public:
 	std::vector<Cluster> clusters;
 	ViewClustering(const InputDataset& input_data) : data(input_data) {};
+
 	void ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance);
+	
 	void PlotClusteredPointCloud();
 	void PlotClusteredTrajectory();
+	
 	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
+	
 	bool WriteClustersFiles(const std::string& output_path);
 	
 private:
@@ -23,7 +27,10 @@ private:
 	void GroupByPoints(const int min_points, const int num_blocks_x, const int num_blocks_z);
 	void AssignCamerasToBlock(const float max_distance);
 	void GroupByCameras(const int min_cameras, const int num_blocks_x, const int num_blocks_z);
+	
+	void ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
 	float ComputeViewSelectionScore(const std::vector<int>& idx, const int ref, const int src, const float sigma_0, const float sigma_1, const float theta_0);
+	
 	bool WriteCamerasFiles(const std::string& path, const int idx);
 	bool WriteNeighborsFile(const std::string& path, const int idx);
 };
