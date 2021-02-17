@@ -27,9 +27,9 @@ private:
 	void ComputePointCloudRange();
 	
 	void AssignPointsToBlock(const int block_size, const int num_blocks_x);
-	void GroupByPoints(const int min_points, const int num_blocks_x, const int num_blocks_z);
+	void GroupByPoints(const int min_points, const int num_blocks_x);
 	void AssignCamerasToBlock(const float max_distance);
-	void GroupByCameras(const int min_cameras, const int num_blocks_x, const int num_blocks_z);
+	void GroupByCameras(const int min_cameras, const int num_blocks_x);
 	
 	void ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
 	float ComputeViewSelectionScore(const std::vector<int>& idx, const int ref, const int src, const float sigma_0, const float sigma_1, const float theta_0);

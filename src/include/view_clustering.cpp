@@ -12,11 +12,11 @@ void ViewClustering::ClusterViews(const int block_size, const int min_points, co
 
 	AssignPointsToBlock(block_size, num_blocks_x);
 
-	GroupByPoints(min_points, num_blocks_x, num_blocks_z);
+	GroupByPoints(min_points, num_blocks_x);
 
 	AssignCamerasToBlock(max_distance);
 
-	GroupByCameras(min_cameras, num_blocks_x, num_blocks_z);
+	GroupByCameras(min_cameras, num_blocks_x);
 
 	const auto lambda_size = [](const Cluster& c){ return c.point_idx.empty() || c.camera_idx.empty(); };
 	clusters.erase(std::remove_if(clusters.begin(), clusters.end(), lambda_size), clusters.end());
@@ -103,27 +103,15 @@ void ViewClustering::PlotClusters()
 
 void ViewClustering::ComputePointCloudRange()
 {
-	x_min = std::numeric_limits<float>::max();
-	x_max = -x_min;
+	const auto cmp_x = [](const Point& p1, const Point& p2) { return p1.x < p2.x; }; 
+	const auto minmax_x = std::minmax_element(data.points.begin(), data.points.end(), cmp_x);
+	x_min = minmax_x.first->x;
+	x_max = minmax_x.second->x;
 
-	z_min = std::numeric_limits<float>::max();
-	z_max = -z_min;
-
-	for (const auto& p : data.points)
-	{
-		const float x = p.x;
-		const float z = p.z;
-
-		if (x < x_min)
-			x_min = x;
-		if (x > x_max)
-			x_max = x;
-
-		if (z < z_min)
-			z_min = z;
-		if (z > z_max)
-			z_max = z;
-	}
+	const auto cmp_z = [](const Point& p1, const Point& p2) { return p1.z < p2.z; }; 
+	const auto minmax_z = std::minmax_element(data.points.begin(), data.points.end(), cmp_z);
+	z_min = minmax_z.first->z;
+	z_max = minmax_z.second->z;
 }
 
 void ViewClustering::AssignPointsToBlock(const int block_size, const int num_blocks_x)
@@ -137,7 +125,7 @@ void ViewClustering::AssignPointsToBlock(const int block_size, const int num_blo
 	}
 }
 
-void ViewClustering::GroupByPoints(const int min_points, const int num_blocks_x, const int num_blocks_z)
+void ViewClustering::GroupByPoints(const int min_points, const int num_blocks_x)
 {
 	for (int i = 0; i < clusters.size(); i++)
 	{
@@ -206,7 +194,7 @@ void ViewClustering::AssignCamerasToBlock(const float max_distance)
 	}
 }
 
-void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_x, const int num_blocks_z)
+void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_x)
 {
 	for (int i = 0; i < clusters.size(); i++)
 	{

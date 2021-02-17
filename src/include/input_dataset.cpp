@@ -199,6 +199,7 @@ void InputDataset::ComputeDepthRange()
 		if (min_depth < 0 || max_depth < 0)
 		{
 			std::cout << "Weird result on computing depth range" << std::endl;
+			std::cin.get();
 		}
 
 		images[i].min_depth = min_depth;
