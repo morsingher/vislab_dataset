@@ -28,7 +28,7 @@ void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma
 	{
 		std::sort(img.features.begin(), img.features.end());
 	}
-	
+
 	std::vector<std::thread> th_vec;
 
 	for (int i = 0; i < clusters.size(); i++)
