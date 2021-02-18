@@ -44,12 +44,6 @@ void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma
 
 bool ViewClustering::WriteClustersFiles(const std::string& output_path)
 {
-	if (mkdir(output_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
-	{
-		std::cout << "Failed to create the results directory" << std::endl;
-		return false;
-	}
-
 	for (int i = 0; i < clusters.size(); i++)
 	{
 		const std::string cluster_folder = output_path + "cluster_" + std::to_string(i) + "/";

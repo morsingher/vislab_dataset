@@ -1,4 +1,7 @@
 #!/bin/bash
 
-rm -rf results
+if [ -d "./results" ]; then
+	rm -rf results
+fi
+mkdir results
 ./build/vislab_dataset ./config/config.json

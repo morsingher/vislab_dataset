@@ -1,4 +1,5 @@
 1) Intrinsic parameters should be read from file rather than hard-coded
 2) Can InputDataset::ComputeDepthRange be written better with STL?
 3) Maybe write a function to remove duplicates?
-4) Optimize multi-threading, which is done very naively (use OpenMP!)
+4) Optimize multi-threading, which is done very naively (use OpenMP?), and parallelize more modules
+5) Fix weird frame orientation on y axis

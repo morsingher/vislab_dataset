@@ -2,7 +2,7 @@
 
 INPUT: Ambarella dataset, OUTPUT: PatchMatchNet dataset
 
-STEPS
+STEPS (more details in algorithm.pdf)
 
 1) Load Ambarella dataset as sparse point cloud, pose for each frame and features extracted for each frame
 2) Select a subset of keyframes from the input video
@@ -12,13 +12,13 @@ STEPS
 6) Compute neighbors with view selection methods for each cluster
 7) Store the results as required by PatchMatchNet (https://github.com/FangjinhuaWang/PatchmatchNet)
 
-TODO & IMPROVEMENTS
+FUTURE IMPROVEMENTS
 
 1) View selection can be improved in two ways:
-- Computing a better score (e.g. by introducing distance)
+- Computing a better score (e.g. by introducing feature distance)
 - Looking for neighbors in nearby clusters
+- Checking for good baseline also among neighbors
 2) Keyframes can be selected in a smarter way:
 - Removing dynamic objects (https://bertabescos.github.io/EmptyCities/)
 - Using other criteria, not just pose difference
-3) Neighbors for each cluster can be computed in parallel, if speed is needed
-4) General code refactoring
+3) Currently considering only frontal camera, extend to others
