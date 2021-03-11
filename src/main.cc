@@ -89,15 +89,25 @@ int main(int argc, char** argv)
 	view_clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
 	std::cout << "Done!" << std::endl << std::endl;
 
-	// // Write files for PatchMatchNet
+	// Write files in COLMAP format
 
-	// std::cout << "Saving results in PatchMatchNet format..." << std::endl;
-	// if (!view_clustering.WriteClustersFiles(params.output_folder))
-	// {
-	// 	std::cout << "Failed to save results" << std::endl;
-	// 	return EXIT_FAILURE;
-	// }
-	// std::cout << "Done!" << std::endl << std::endl;
+	std::cout << "Saving results in COLMAP format..." << std::endl;
+	if (!view_clustering.WriteColmapFiles(params.output_folder))
+	{
+		std::cout << "Failed to save results in COLMAP format" << std::endl;
+		return EXIT_FAILURE;
+	}
+	std::cout << "Done!" << std::endl << std::endl;
+
+	// Write files in standard format
+
+	std::cout << "Saving results in standard format..." << std::endl;
+	if (!view_clustering.WriteClustersFiles(params.output_folder, params.num_neighbors))
+	{
+		std::cout << "Failed to save results in standard format" << std::endl;
+		return EXIT_FAILURE;
+	}
+	std::cout << "Done!" << std::endl << std::endl;
 
 	return EXIT_SUCCESS;
 }

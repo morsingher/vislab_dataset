@@ -15,7 +15,8 @@ public:
 	ViewClustering(InputDataset& input_data) : data(input_data) {};
 	void ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance);
 	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
-	bool WriteClustersFiles(const std::string& output_path);
+	bool WriteClustersFiles(const std::string& output_path, const int num_neighbors);
+	bool WriteColmapFiles(const std::string& output_path);
 	
 private:
 
@@ -30,7 +31,11 @@ private:
 	float ComputeViewSelectionScore(const std::vector<Feature>& idx, const int ref_frame, const int ref_sensor, const int src_frame, const int src_sensor, const float sigma_0, const float sigma_1, const float theta_0);
 	
 	bool WriteCamerasFiles(const std::string& path, const int idx);
-	bool WriteNeighborsFile(const std::string& path, const int idx);
+	bool WriteNeighborsFile(const std::string& path, const int idx, const int num_neighbors);
+
+	bool WriteColmapCamerasFile(const std::string& path, const int idx);
+	bool WriteColmapImagesFile(const std::string& path, const int idx);
+	bool WriteColmapPointsFile(const std::string& path, const int idx);
 };
 
 #endif

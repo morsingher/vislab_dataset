@@ -30,6 +30,11 @@ bool InputDataset::LoadPoints(const std::string& filename)
 					>> new_point.x >> new_point.y >> new_point.z 
 					>> color >> valid;
 
+		new_point.r = 0;
+		new_point.g = 0;
+		new_point.b = 0;
+		new_point.error = 0.0f;
+
 		points[point_ID] = new_point;
 	}
 
@@ -201,10 +206,11 @@ void InputDataset::BuildFeatureTracks()
 	{
 		for (int j = 0; j < num_cameras; j++)
 		{
-			for (const auto& f : images[i][j].features)
+			for (int k = 0; k < images[i][j].features.size(); k++)
 			{
+				const int point_id = images[i][j].features[k].point_idx;
 				const int uuid = j * num_frames + i;
-				points[f.point_idx].image_idx.push_back(uuid);
+				points[point_id].image_idx.push_back(std::make_pair(uuid, k));
 			}
 		}
 	}

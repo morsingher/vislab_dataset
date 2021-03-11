@@ -23,7 +23,8 @@ struct Point
 {
 	double x, y, z;
 	int r, g, b; // TODO
-	std::vector<int> image_idx; // UUID
+	float error;
+	std::vector<std::pair<int, int>> image_idx; // UUID
 	Point() : x(0.0f), y(0.0f), z(0.0f) {};
 	Point(const float x_, const float y_, const float z_) : x(x_), y(y_), z(z_) {};
 };

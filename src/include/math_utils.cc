@@ -52,3 +52,34 @@ Point TransformPointFromFLUToRDF(const Point& p)
 {
 	return Point(-p.y, -p.z, p.x);
 }
+
+Quaternion QuaternionFromRotationMatrix(const cv::Mat_<float>& R)
+{
+	Quaternion q;
+	float trace = R(0,0) + R(1,1) + R(2,2);
+	
+	if (trace > 0.0)
+	{
+		float s = std::sqrt(trace + 1.0);
+		q[3] = s * 0.5;
+		s = 0.5 / s;
+		q[0] = s * (R(2,1) - R(1,2));
+		q[1] = s * (R(0,2) - R(2,0));
+		q[2] = s * (R(1,0) - R(0,1));
+	}
+	else
+	{
+		int i = R(0,0) < R(1,1) ? (R(1,1) < R(2,2) ? 2 : 1) : (R(0,0) < R(2,2) ? 2 : 0);
+		int j = (i + 1) % 3;
+		int k = (i + 2) % 3;
+		float s = std::sqrt(R(i,i) - R(j,j) - R(k,k) + 1.0);
+		q[i] = s * 0.5;
+		s = 0.5 / s;
+
+		q[3] = s * (R(k,j) - R(j,k));
+		q[j] = s * (R(j,i) - R(i,j));
+		q[k] = s * (R(k,i) - R(i,k));
+	}
+
+	return q;
+}
