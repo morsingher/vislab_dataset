@@ -33,10 +33,12 @@ bool InputDataset::LoadPoints(const std::string& filename)
 		points[point_ID] = new_point;
 	}
 
+	std::cout << "Successfully loaded " << points.size() << " points" << std::endl;
+
 	return true;
 }
 
-bool InputDataset::LoadFeatures(const std::string& filename)
+bool InputDataset::LoadFeatures(const std::string& filename, const int num_cameras)
 {
 	std::ifstream features_file_stream(filename, std::ios::in);
 	if (!features_file_stream)
@@ -49,10 +51,12 @@ bool InputDataset::LoadFeatures(const std::string& filename)
 	features_file_stream.read((char*) &buff_64, sizeof(uint64_t));
 	const int num_features = buff_64;
 
+	std::cout << "There are " << num_features << " features to load" << std::endl; 
+
 	uint32_t buff;
 	features_file_stream.read((char*) &buff, sizeof(uint32_t));
 	const int num_frames = buff;
-	images.resize(num_frames);
+	images.resize(num_frames * num_cameras);
 
 	features_file_stream.read((char*) &buff, sizeof(uint32_t));
 	const int num_observations = buff;
@@ -90,10 +94,8 @@ bool InputDataset::LoadFeatures(const std::string& filename)
 		features_file_stream.read((char*) &buff, sizeof(uint32_t));
 		const int frame = buff;
 
-		if (sensor == 0)
-		{
-			images[frame].features.push_back(new_feature);
-		}
+		const int uuid = sensor * num_frames + frame;
+		images[uuid].features.push_back(new_feature);
 
 		count++;
 	}
@@ -110,97 +112,106 @@ bool InputDataset::LoadPoses(const std::string& filename)
 		return false;
 	}
 
-	int count = 0;
-	while(!poses_file_stream.eof() && !poses_file_stream.bad() && count < images.size())
+	for (int i = 0; i < images.size(); i++)
 	{
-		std::string line;
-		std::getline(poses_file_stream, line);
-		std::istringstream line_stream(line);
+		images[i].K = cv::Mat::eye(3, 3, CV_32F);
+		images[i].R = cv::Mat::eye(3, 3, CV_32F);
+		images[i].t = cv::Mat::eye(3, 1, CV_32F);
+	}
 
-		images[count].K = cv::Mat::eye(3, 3, CV_32F);
-		images[count].R = cv::Mat::eye(3, 3, CV_32F);
-		images[count].t = cv::Mat::eye(3, 1, CV_32F);
+	// int count = 0;
+	// while(!poses_file_stream.eof() && !poses_file_stream.bad() && count < images.size())
+	// {
+	// 	std::string line;
+	// 	std::getline(poses_file_stream, line);
+	// 	std::istringstream line_stream(line);
 
-		images[count].width = 3840;
-		images[count].height = 1920;
-		images[count].baseline = 0.3003000020980835;
-		images[count].K << 2654.375, 0, 1834.875,
-						   0, 2654.375, 978.625,
-						   0, 0, 1;
+	// 	for (int i = 0; i < 6; i++)
+	// 	{
+	// 		images[count][i].K = cv::Mat::eye(3, 3, CV_32F);
+	// 		images[count][i].R = cv::Mat::eye(3, 3, CV_32F);
+	// 		images[count][i].t = cv::Mat::eye(3, 1, CV_32F);
 
-		line_stream >> images[count].R(0,0) >> images[count].R(0,1) >> images[count].R(0,2) >> images[count].t(0,0)
-					>> images[count].R(1,0) >> images[count].R(1,1) >> images[count].R(1,2) >> images[count].t(1,0)
-					>> images[count].R(2,0) >> images[count].R(2,1) >> images[count].R(2,2) >> images[count].t(2,0);
+	// 		images[count][i].width = 3840;
+	// 		images[count][i].height = 1920;
+	// 		images[count][i].K << 2654.375, 0, 1834.875,
+	// 						   0, 2654.375, 978.625,
+	// 						   0, 0, 1;
 
-		char buffer[50];
-		sprintf(buffer, "%.6d.png", count);
-		images[count].filename = std::string(buffer);
+	// 		line_stream >> images[count][i].R(0,0) >> images[count][i].R(0,1) >> images[count][i].R(0,2) >> images[count][i].t(0,0)
+	// 					>> images[count][i].R(1,0) >> images[count][i].R(1,1) >> images[count][i].R(1,2) >> images[count][i].t(1,0)
+	// 					>> images[count][i].R(2,0) >> images[count][i].R(2,1) >> images[count][i].R(2,2) >> images[count][i].t(2,0);
 
-		count++;
-	}	
+	// 		char buffer[50];
+	// 		sprintf(buffer, "%.6d.png", count);
+	// 		images[count][i].filename = std::string(buffer);
+	// 	}
+
+	// 	count++;
+	// }	
 	
 	return true;
 }
 
-void InputDataset::FilterPoses(const float min_dist)
-{
-	int prev = 0;
-	filt.push_back(prev); 
+// void InputDataset::FilterPoses(const float min_dist)
+// {
+// 	int prev = 0;
+// 	filt.push_back(prev); 
 
-	for (int i = 1; i < images.size(); i++)
-	{
-		const float dist = ComputePoseDistance(images[prev].t, images[i].t);
-		if (dist > min_dist)
-		{
-			prev = i;
-			filt.push_back(prev);
-		}
-	} 
-}
+// 	for (int i = 1; i < images.size(); i++)
+// 	{
+// 		const float dist = ComputePoseDistance(images[prev][0].t, images[i][0].t);
+// 		if (dist > min_dist)
+// 		{
+// 			prev = i;
+// 			filt.push_back(prev);
+// 		}
+// 	} 
+// }
 
-void InputDataset::BuildFeatureTracks()
-{
-	for (const auto& i : filt)
-	{
-		for (const auto& f : images[i].features)
-		{
-			points[f.point_idx].frame_idx.push_back(i);
-		}
-	}
+// void InputDataset::ComputeDepthRange()
+// {
+// 	for (const auto& i : filt)
+// 	{
+// 		for (int j = 0; j < 6; j++)
+// 		{
+// 			float max_depth = 0.0f;
+// 			float min_depth = std::numeric_limits<float>::max();
 
-	const auto lambda_size = [](const Point& p) { return p.frame_idx.empty(); };
-	points.erase(std::remove_if(points.begin(), points.end(), lambda_size), points.end());
-}
+// 			for (const auto& f : images[i][j].features)
+// 			{
+// 				const int idx = f.point_idx;
+// 				const Point p_cam = TransformPointFromWorldToCam(images[i][j].R, images[i][j].t, points[idx]);
+// 				const float depth = p_cam.z;
+// 				if (depth < min_depth)
+// 				{
+// 					min_depth = depth;
+// 				}
+// 				if (depth > max_depth)
+// 				{
+// 					max_depth = depth;
+// 				}
+// 			}
 
-void InputDataset::ComputeDepthRange()
-{
-	for (const auto& i : filt)
-	{
-		float max_depth = 0.0f;
-		float min_depth = std::numeric_limits<float>::max();
+// 			images[i][j].min_depth = min_depth;
+// 			images[i][j].max_depth = max_depth;
+// 		}
+// 	}
+// }
 
-		for (const auto& f : images[i].features)
-		{
-			const int idx = f.point_idx;
-			const Point p_cam = TransformPointFromWorldToCam(images[i].R, images[i].t, points[idx]);
-			const float depth = p_cam.z;
-			if (depth < min_depth)
-			{
-				min_depth = depth;
-			}
-			if (depth > max_depth)
-			{
-				max_depth = depth;
-			}
-		}
+// void InputDataset::BuildFeatureTracks()
+// {
+// 	for (const auto& i : filt)
+// 	{
+// 		for (int j = 0; j < 6; j++)
+// 		{
+// 			for (const auto& f : images[i][j].features)
+// 			{
+// 				points[f.point_idx].image_id.push_back(std::make_pair(i, j));
+// 			}
+// 		}
+// 	}
 
-		if (min_depth < 0 || max_depth < 0)
-		{
-			std::cout << "Weird result on computing depth range" << std::endl;
-			std::cin.get();
-		}
-
-		images[i].min_depth = min_depth;
-		images[i].max_depth = max_depth;
-	}
-}
+// 	const auto lambda_size = [](const Point& p) { return p.image_id.empty(); };
+// 	points.erase(std::remove_if(points.begin(), points.end(), lambda_size), points.end());
+// }

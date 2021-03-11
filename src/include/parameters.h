@@ -21,6 +21,8 @@ public:
 	std::string points_file;
 	std::string features_file;
 
+	int num_cameras;
+
 	// Keyframe selection
 
 	float min_difference;

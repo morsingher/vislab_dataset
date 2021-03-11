@@ -1,349 +1,345 @@
-#include "view_clustering.h"
+// #include "view_clustering.h"
 
-void ViewClustering::ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance)
-{
-	ComputePointCloudRange();
+// void ViewClustering::ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance)
+// {
+// 	ComputePointCloudRange();
 
-	const int num_blocks_x = std::ceil(std::abs(x_max - x_min) / block_size);
-	const int num_blocks_z = std::ceil(std::abs(z_max - z_min) / block_size);
-	clusters.resize(num_blocks_x * num_blocks_z);
+// 	const int num_blocks_x = std::ceil(std::abs(x_max - x_min) / block_size);
+// 	const int num_blocks_z = std::ceil(std::abs(z_max - z_min) / block_size);
+// 	clusters.resize(num_blocks_x * num_blocks_z);
 
-	AssignPointsToBlock(block_size, num_blocks_x);
+// 	AssignPointsToBlock(block_size, num_blocks_x);
 
-	GroupByPoints(min_points, num_blocks_x);
+// 	GroupByPoints(min_points, num_blocks_x);
 
-	AssignCamerasToBlock(max_distance);
+// 	AssignCamerasToBlock(max_distance);
 
-	GroupByCameras(min_cameras, num_blocks_x);
+// 	GroupByCameras(min_cameras, num_blocks_x);
 
-	const auto lambda_size = [](const Cluster& c){ return c.point_idx.empty() || c.camera_idx.empty(); };
-	clusters.erase(std::remove_if(clusters.begin(), clusters.end(), lambda_size), clusters.end());
-}
+// 	const auto lambda_size = [](const Cluster& c){ return c.point_idx.empty() || c.camera_idx.empty(); };
+// 	clusters.erase(std::remove_if(clusters.begin(), clusters.end(), lambda_size), clusters.end());
+// }
 
-void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
-{
-	for (auto& img : data.images)
-	{
-		std::sort(img.features.begin(), img.features.end());
-	}
+// void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
+// {
+// 	std::vector<std::thread> th_vec;
 
-	std::vector<std::thread> th_vec;
+// 	for (int i = 0; i < clusters.size(); i++)
+// 	{
+// 		for (const auto& cam : clusters[i].camera_idx)
+// 		{
+// 			std::sort(data.images[cam.first][cam.second].features.begin(),
+// 					  data.images[cam.first][cam.second].features.end());
+// 		}
+// 		th_vec.push_back(std::thread(&ViewClustering::ComputeNeighborsForCluster, this, i, num_neighbors, sigma_0, sigma_1, theta_0));
+// 	}
 
-	for (int i = 0; i < clusters.size(); i++)
-	{
-		th_vec.push_back(std::thread(&ViewClustering::ComputeNeighborsForCluster, this, i, num_neighbors, sigma_0, sigma_1, theta_0));
-	}
+// 	for (auto& th : th_vec)
+// 	{
+// 		th.join();
+// 	}
+// }
 
-	for (auto& th : th_vec)
-	{
-		th.join();
-	}
-}
+// // bool ViewClustering::WriteClustersFiles(const std::string& output_path)
+// // {
+// // 	for (int i = 0; i < clusters.size(); i++)
+// // 	{
+// // 		const std::string cluster_folder = output_path + "cluster_" + std::to_string(i) + "/";
+// // 		if (mkdir(cluster_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+// // 		{
+// // 			std::cout << "Failed to create the directory for cluster " << i << std::endl;
+// // 			return false;
+// // 		}
 
-bool ViewClustering::WriteClustersFiles(const std::string& output_path)
-{
-	for (int i = 0; i < clusters.size(); i++)
-	{
-		const std::string cluster_folder = output_path + "cluster_" + std::to_string(i) + "/";
-		if (mkdir(cluster_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
-		{
-			std::cout << "Failed to create the directory for cluster " << i << std::endl;
-			return false;
-		}
+// // 		if (!WriteCamerasFiles(cluster_folder, i))
+// // 		{
+// // 			std::cout << "Failed to write cameras files for cluster " << i << std::endl;
+// // 			return false;
+// // 		}
 
-		if (!WriteCamerasFiles(cluster_folder, i))
-		{
-			std::cout << "Failed to write cameras files for cluster " << i << std::endl;
-			return false;
-		}
+// // 		if (!WriteNeighborsFile(cluster_folder, i))
+// // 		{
+// // 			std::cout << "Failed to write neighbors file for cluster " << i << std::endl;
+// // 			return false;
+// // 		}
+// // 	}
 
-		if (!WriteNeighborsFile(cluster_folder, i))
-		{
-			std::cout << "Failed to write neighbors file for cluster " << i << std::endl;
-			return false;
-		}
-	}
+// // 	return true;
+// // }
 
-	return true;
-}
+// void ViewClustering::ComputePointCloudRange()
+// {
+// 	const auto cmp_x = [](const Point& p1, const Point& p2) { return p1.x < p2.x; }; 
+// 	const auto minmax_x = std::minmax_element(data.points.begin(), data.points.end(), cmp_x);
+// 	x_min = minmax_x.first->x;
+// 	x_max = minmax_x.second->x;
 
-void ViewClustering::ComputePointCloudRange()
-{
-	const auto cmp_x = [](const Point& p1, const Point& p2) { return p1.x < p2.x; }; 
-	const auto minmax_x = std::minmax_element(data.points.begin(), data.points.end(), cmp_x);
-	x_min = minmax_x.first->x;
-	x_max = minmax_x.second->x;
+// 	const auto cmp_z = [](const Point& p1, const Point& p2) { return p1.z < p2.z; }; 
+// 	const auto minmax_z = std::minmax_element(data.points.begin(), data.points.end(), cmp_z);
+// 	z_min = minmax_z.first->z;
+// 	z_max = minmax_z.second->z;
+// }
 
-	const auto cmp_z = [](const Point& p1, const Point& p2) { return p1.z < p2.z; }; 
-	const auto minmax_z = std::minmax_element(data.points.begin(), data.points.end(), cmp_z);
-	z_min = minmax_z.first->z;
-	z_max = minmax_z.second->z;
-}
+// void ViewClustering::AssignPointsToBlock(const int block_size, const int num_blocks_x)
+// {
+// 	for (int i = 0; i < data.points.size(); i++)
+// 	{		
+// 		const float x = std::floor((data.points[i].x + std::abs(x_min) + 0.01) / block_size);
+// 		const float z = std::floor((data.points[i].z + std::abs(z_min) + 0.01) / block_size);
+// 		const int idx = z * num_blocks_x + x;
+// 		clusters[idx].point_idx.push_back(i);
+// 	}
+// }
 
-void ViewClustering::AssignPointsToBlock(const int block_size, const int num_blocks_x)
-{
-	for (int i = 0; i < data.points.size(); i++)
-	{		
-		const float x = std::floor((data.points[i].x + std::abs(x_min) + 0.01) / block_size);
-		const float z = std::floor((data.points[i].z + std::abs(z_min) + 0.01) / block_size);
-		const int idx = z * num_blocks_x + x;
-		clusters[idx].point_idx.push_back(i);
-	}
-}
+// void ViewClustering::GroupByPoints(const int min_points, const int num_blocks_x)
+// {
+// 	for (int i = 0; i < clusters.size(); i++)
+// 	{
+// 		if (clusters[i].point_idx.size() > 0 && clusters[i].point_idx.size() < min_points)
+// 		{
+// 			std::vector<int> neighbors = { i - 1, // Left
+// 										   i + 1, // Right
+// 										   i - num_blocks_x, // Up 
+// 										   i + num_blocks_x, // Down
+// 										   i - num_blocks_x - 1, // Up-left 
+// 										   i - num_blocks_x + 1, // Up-right
+// 										   i + num_blocks_x - 1, // Down-left
+// 										   i + num_blocks_x + 1 }; // Down-right
 
-void ViewClustering::GroupByPoints(const int min_points, const int num_blocks_x)
-{
-	for (int i = 0; i < clusters.size(); i++)
-	{
-		if (clusters[i].point_idx.size() > 0 && clusters[i].point_idx.size() < min_points)
-		{
-			std::vector<int> neighbors = { i - 1, // Left
-										   i + 1, // Right
-										   i - num_blocks_x, // Up 
-										   i + num_blocks_x, // Down
-										   i - num_blocks_x - 1, // Up-left 
-										   i - num_blocks_x + 1, // Up-right
-										   i + num_blocks_x - 1, // Down-left
-										   i + num_blocks_x + 1 }; // Down-right
+// 			bool isolated = true;
+// 			int smallest_idx = -1;
+// 			for (const auto& idx : neighbors)
+// 			{
+// 				if (idx >= 0 && idx < clusters.size())
+// 				{
+// 					if (clusters[idx].point_idx.size() > 0)
+// 					{
+// 						isolated = false;
+// 						if (smallest_idx == -1)
+// 						{
+// 							smallest_idx = idx;
+// 						}
+// 						else if (clusters[idx].point_idx.size() < clusters[smallest_idx].point_idx.size())
+// 						{
+// 							smallest_idx = idx;
+// 						}
+// 					}
+// 				}
+// 			}
 
-			bool isolated = true;
-			int smallest_idx = -1;
-			for (const auto& idx : neighbors)
-			{
-				if (idx >= 0 && idx < clusters.size())
-				{
-					if (clusters[idx].point_idx.size() > 0)
-					{
-						isolated = false;
-						if (smallest_idx == -1)
-						{
-							smallest_idx = idx;
-						}
-						else if (clusters[idx].point_idx.size() < clusters[smallest_idx].point_idx.size())
-						{
-							smallest_idx = idx;
-						}
-					}
-				}
-			}
+// 			if (!isolated)
+// 			{
+// 				clusters[smallest_idx].point_idx.insert(clusters[smallest_idx].point_idx.end(), 
+// 														clusters[i].point_idx.begin(), 
+// 														clusters[i].point_idx.end());
+// 			}
 
-			if (!isolated)
-			{
-				clusters[smallest_idx].point_idx.insert(clusters[smallest_idx].point_idx.end(), 
-														clusters[i].point_idx.begin(), 
-														clusters[i].point_idx.end());
-			}
+// 			clusters[i].point_idx.resize(0); // Set size to zero in order to remove later
+// 		}
+// 	}
+// }
 
-			clusters[i].point_idx.resize(0); // Set size to zero in order to remove later
-		}
-	}
-}
+// void ViewClustering::AssignCamerasToBlock(const float max_distance)
+// {
+// 	for (auto& c : clusters) // Cluster
+// 	{
+// 		for (const auto& p : c.point_idx) // Points in the cluster 
+// 		{
+// 			for (const auto& f : data.points[p].image_id) // Cameras that see points in the cluster
+// 			{
+// 				const Point p_cam = TransformPointFromWorldToCam(data.images[f.first][f.second].R, 
+// 																 data.images[f.first][f.second].t, 
+// 																 data.points[p]);
+// 				if (p_cam.z < max_distance)
+// 				{
+// 					c.camera_idx.insert(f); // This should remove duplicates automatically
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
-void ViewClustering::AssignCamerasToBlock(const float max_distance)
-{
-	for (auto& c : clusters) // Cluster
-	{
-		for (const auto& p : c.point_idx) // Points in the cluster 
-		{
-			for (const auto& f : data.points[p].frame_idx) // Cameras that see points in the cluster
-			{
-				const Point p_cam = TransformPointFromWorldToCam(data.images[f].R, data.images[f].t, data.points[p]);
-				if (p_cam.z < max_distance)
-				{
-					c.camera_idx.push_back(f);
-				}
-			}
-		}
+// void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_x)
+// {
+// 	for (int i = 0; i < clusters.size(); i++)
+// 	{
+// 		if (clusters[i].camera_idx.size() > 0 && 
+// 			clusters[i].camera_idx.size() < min_cameras && 
+// 			clusters[i].point_idx.size() > 0)
+// 		{
+// 			std::vector<int> neighbors = { i - 1, // Left
+// 										   i + 1, // Right
+// 										   i - num_blocks_x, // Up 
+// 										   i + num_blocks_x, // Down
+// 										   i - num_blocks_x - 1, // Up-left 
+// 										   i - num_blocks_x + 1, // Up-right
+// 										   i + num_blocks_x - 1, // Down-left
+// 										   i + num_blocks_x + 1 }; // Down-right
 
-		std::sort(c.camera_idx.begin(), c.camera_idx.end());
-		c.camera_idx.erase(std::unique(c.camera_idx.begin(), c.camera_idx.end()), c.camera_idx.end());
-	}
-}
+// 			int smallest_idx = -1;
+// 			for (const auto& idx : neighbors)
+// 			{
+// 				if (idx >= 0 && idx < clusters.size())
+// 				{
+// 					if (clusters[idx].point_idx.size() > 0 && clusters[idx].camera_idx.size() > 0)
+// 					{
+// 						if (smallest_idx == -1)
+// 						{
+// 							smallest_idx = idx;
+// 						}
+// 						else if (clusters[idx].camera_idx.size() < clusters[smallest_idx].camera_idx.size())
+// 						{
+// 							smallest_idx = idx;
+// 						}
+// 					}
+// 				}
+// 			}
 
-void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_x)
-{
-	for (int i = 0; i < clusters.size(); i++)
-	{
-		if (clusters[i].camera_idx.size() > 0 && 
-			clusters[i].camera_idx.size() < min_cameras && 
-			clusters[i].point_idx.size() > 0)
-		{
-			std::vector<int> neighbors = { i - 1, // Left
-										   i + 1, // Right
-										   i - num_blocks_x, // Up 
-										   i + num_blocks_x, // Down
-										   i - num_blocks_x - 1, // Up-left 
-										   i - num_blocks_x + 1, // Up-right
-										   i + num_blocks_x - 1, // Down-left
-										   i + num_blocks_x + 1 }; // Down-right
+// 			if (smallest_idx != -1)
+// 			{
+// 				for (const auto& cam : clusters[i].camera_idx)
+// 				{
+// 					clusters[smallest_idx].camera_idx.insert(cam);
+// 				}
+// 			}
+// 			// else
+// 			// {
+// 			// 	std::cout << "The cluster is isolated" << std::endl;
+// 			// 	std::cin.get();
+// 			// }
 
-			int smallest_idx = -1;
-			for (const auto& idx : neighbors)
-			{
-				if (idx >= 0 && idx < clusters.size())
-				{
-					if (clusters[idx].point_idx.size() > 0 && clusters[idx].camera_idx.size() > 0)
-					{
-						if (smallest_idx == -1)
-						{
-							smallest_idx = idx;
-						}
-						else if (clusters[idx].camera_idx.size() < clusters[smallest_idx].camera_idx.size())
-						{
-							smallest_idx = idx;
-						}
-					}
-				}
-			}
+// 			clusters[i].camera_idx.clear(); // Set size to zero in order to remove later
+// 		}
+// 	}
+// }
 
-			if (smallest_idx != -1)
-			{
-				clusters[smallest_idx].camera_idx.insert(clusters[smallest_idx].camera_idx.end(), 
-														 clusters[i].camera_idx.begin(), 
-														 clusters[i].camera_idx.end());
+// void ViewClustering::ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
+// {
+// 	for (const auto& ref : clusters[i].camera_idx)
+// 	{
+// 		std::vector<Neighbor> n;
 
-				std::sort(clusters[smallest_idx].camera_idx.begin(), clusters[smallest_idx].camera_idx.end());
-				clusters[smallest_idx].camera_idx.erase(std::unique(clusters[smallest_idx].camera_idx.begin(), 
-																	clusters[smallest_idx].camera_idx.end()),
-														clusters[smallest_idx].camera_idx.end());
+// 		for (const auto& src : clusters[i].camera_idx)
+// 		{
+// 			if (ref.first != src.first && ref.second != src.second);
+// 			{
+// 				std::vector<Feature> common_features;
+// 				std::set_intersection(data.images[ref.first][ref.second].features.begin(), data.images[ref.first][ref.second].features.end(),
+// 									  data.images[src.first][src.second].features.begin(), data.images[src.first][src.second].features.end(),
+// 									  back_inserter(common_features));
 
-			}
-			else
-			{
-				std::cout << "The cluster is isolated" << std::endl;
-				std::cin.get();
-			}
+// 				const float score = ComputeViewSelectionScore(common_features, ref, src, sigma_0, sigma_1, theta_0);
+// 				if (score > 0.0f)
+// 				{
+// 					n.push_back(Neighbor(src, score));
+// 				}
+// 			}
+// 		}
 
-			clusters[i].camera_idx.resize(0); // Set size to zero in order to remove later
-		}
-	}
-}
+// 		const auto lambda_sort = [](const Neighbor& n1, const Neighbor& n2) { return n1.score > n2.score; };
+// 		std::sort(n.begin(), n.end(), lambda_sort);
+// 		n.resize(num_neighbors);
 
-void ViewClustering::ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
-{
-	for (const auto& ref : clusters[i].camera_idx)
-	{
-		std::vector<Neighbor> n;
+// 		// clusters[i].neighbors.insert(std::make_pair(ref, n));
+// 	}
+// }
 
-		for (const auto& src : clusters[i].camera_idx)
-		{
-			if (ref != src)
-			{
-				std::vector<Feature> common_features;
-				std::set_intersection(data.images[ref].features.begin(), data.images[ref].features.end(),
-									  data.images[src].features.begin(), data.images[src].features.end(),
-									  back_inserter(common_features));
+// float ViewClustering::ComputeViewSelectionScore(const std::vector<Feature>& idx, 
+// 												const std::pair<int, int>& ref, 
+// 												const std::pair<int, int>& src,
+// 												const float sigma_0, 
+// 												const float sigma_1, 
+// 												const float theta_0)
+// {
+// 	float score = 0.0f;
+// 	for (const auto& f : idx)
+// 	{
+// 		float theta = ComputeTriangulationAngle(data.points[f.point_idx], 
+// 												data.images[ref.first][ref.second].t, 
+// 												data.images[ref.first][ref.second].t);
+// 		if (theta <= theta_0)
+// 		{
+// 			score += std::exp(- std::pow(theta - theta_0, 2) / (2 * std::pow(sigma_0, 2)));
+// 		}
+// 		else
+// 		{
+// 			score += std::exp(- std::pow(theta - theta_0, 2) / (2 * std::pow(sigma_1, 2)));
+// 		}
+// 	}
+// 	return score;
+// }
 
-				const float score = ComputeViewSelectionScore(common_features, ref, src, sigma_0, sigma_1, theta_0);
-				if (score > 0.0f)
-				{
-					n.push_back(Neighbor(src, score));
-				}
-			}
-		}
+// // bool ViewClustering::WriteNeighborsFile(const std::string& path, const int idx)
+// // {
+// // 	const std::string filename = path + std::string("pair.txt");
 
-		const auto lambda_sort = [](const Neighbor& n1, const Neighbor& n2) { return n1.score > n2.score; };
-		std::sort(n.begin(), n.end(), lambda_sort);
-		n.resize(num_neighbors);
+// // 	std::ofstream neighbors_file_stream(filename, std::ios::out);
+// // 	if (!neighbors_file_stream)
+// // 	{
+// // 		std::cout << "Failed to open neighbors file for cluster " << idx << std::endl;
+// // 		return false;
+// // 	}
 
-		clusters[i].neighbors.insert(std::make_pair(ref, n));
-	}
-}
+// // 	Cluster& c = clusters[idx];
 
-float ViewClustering::ComputeViewSelectionScore(const std::vector<Feature>& idx, 
-												const int ref, 
-												const int src,
-												const float sigma_0, 
-												const float sigma_1, 
-												const float theta_0)
-{
-	float score = 0.0f;
-	for (const auto& f : idx)
-	{
-		float theta = ComputeTriangulationAngle(data.points[f.point_idx], data.images[ref].t, data.images[src].t);
-		if (theta <= theta_0)
-		{
-			score += std::exp(- std::pow(theta - theta_0, 2) / (2 * std::pow(sigma_0, 2)));
-		}
-		else
-		{
-			score += std::exp(- std::pow(theta - theta_0, 2) / (2 * std::pow(sigma_1, 2)));
-		}
-	}
-	return score;
-}
+// // 	neighbors_file_stream << c.camera_idx.size() << std::endl;
 
-bool ViewClustering::WriteNeighborsFile(const std::string& path, const int idx)
-{
-	const std::string filename = path + std::string("pair.txt");
+// // 	for (const auto& i : c.camera_idx)
+// // 	{
+// // 		neighbors_file_stream << i << std::endl;
+// // 		neighbors_file_stream << 10 << " ";
+// // 		for (auto& n : c.neighbors[i])
+// // 		{
+// // 			neighbors_file_stream << n.idx << " " << n.score << " ";
+// // 		}
+// // 		neighbors_file_stream << std::endl;
+// // 	}
 
-	std::ofstream neighbors_file_stream(filename, std::ios::out);
-	if (!neighbors_file_stream)
-	{
-		std::cout << "Failed to open neighbors file for cluster " << idx << std::endl;
-		return false;
-	}
+// // 	return true;
+// // }
 
-	Cluster& c = clusters[idx];
+// // bool ViewClustering::WriteCamerasFiles(const std::string& path, const int idx)
+// // {
+// // 	const std::string cam_folder = path + "cams_1/";
+// // 	if (mkdir(cam_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+// // 	{
+// // 		std::cout << "Failed to create the directory for cluster " << idx << std::endl;
+// // 		return false;
+// // 	}
 
-	neighbors_file_stream << c.camera_idx.size() << std::endl;
+// // 	for (const auto& i : clusters[idx].camera_idx)
+// // 	{
+// // 		char buffer[50];
+// // 		sprintf(buffer, "%.8d_cam.txt", i);
+// // 		const std::string filename = cam_folder + std::string(buffer);
 
-	for (const auto& i : c.camera_idx)
-	{
-		neighbors_file_stream << i << std::endl;
-		neighbors_file_stream << 10 << " ";
-		for (auto& n : c.neighbors[i])
-		{
-			neighbors_file_stream << n.idx << " " << n.score << " ";
-		}
-		neighbors_file_stream << std::endl;
-	}
+// // 		std::ofstream cameras_file_stream(filename, std::ios::out);
+// // 		if (!cameras_file_stream)
+// // 		{
+// // 			std::cout << "Failed to open camera file " << i << " for cluster " << idx << std::endl;
+// // 			return false;
+// // 		}
 
-	return true;
-}
+// // 		cameras_file_stream << "extrinsic" << std::endl;
+// // 		cameras_file_stream << data.images[i].R(0,0) << " " << data.images[i].R(0,1) << " " 
+// // 							<< data.images[i].R(0,2) << " " << data.images[i].t(0,0) << std::endl
+// // 							<< data.images[i].R(1,0) << " " << data.images[i].R(1,1) << " " 
+// // 							<< data.images[i].R(1,2) << " " << data.images[i].t(1,0) << std::endl
+// // 							<< data.images[i].R(2,0) << " " << data.images[i].R(2,1) << " " 
+// // 							<< data.images[i].R(2,2) << " " << data.images[i].t(2,0) << std::endl
+// // 							<< 0.0f << " " << 0.0f << " " << 0.0f << " " << 1.0f 
+// // 							<< std::endl << std::endl;
 
-bool ViewClustering::WriteCamerasFiles(const std::string& path, const int idx)
-{
-	const std::string cam_folder = path + "cams_1/";
-	if (mkdir(cam_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
-	{
-		std::cout << "Failed to create the directory for cluster " << idx << std::endl;
-		return false;
-	}
+// // 		cameras_file_stream << "intrinsic" << std::endl;
+// // 		cameras_file_stream << data.images[i].K(0,0) << " " << data.images[i].K(0,1) 
+// // 							<< " " << data.images[i].K(0,2) << std::endl
+// // 							<< data.images[i].K(1,0) << " " << data.images[i].K(1,1) 
+// // 							<< " " << data.images[i].K(1,2) << std::endl
+// // 							<< data.images[i].K(2,0) << " " << data.images[i].K(2,1) 
+// // 							<< " " << data.images[i].K(2,2) << std::endl << std::endl;
 
-	for (const auto& i : clusters[idx].camera_idx)
-	{
-		char buffer[50];
-		sprintf(buffer, "%.8d_cam.txt", i);
-		const std::string filename = cam_folder + std::string(buffer);
+// // 		cameras_file_stream << data.images[i].min_depth << " " << data.images[i].max_depth << std::endl;
+// // 	}
 
-		std::ofstream cameras_file_stream(filename, std::ios::out);
-		if (!cameras_file_stream)
-		{
-			std::cout << "Failed to open camera file " << i << " for cluster " << idx << std::endl;
-			return false;
-		}
-
-		cameras_file_stream << "extrinsic" << std::endl;
-		cameras_file_stream << data.images[i].R(0,0) << " " << data.images[i].R(0,1) << " " 
-							<< data.images[i].R(0,2) << " " << data.images[i].t(0,0) << std::endl
-							<< data.images[i].R(1,0) << " " << data.images[i].R(1,1) << " " 
-							<< data.images[i].R(1,2) << " " << data.images[i].t(1,0) << std::endl
-							<< data.images[i].R(2,0) << " " << data.images[i].R(2,1) << " " 
-							<< data.images[i].R(2,2) << " " << data.images[i].t(2,0) << std::endl
-							<< 0.0f << " " << 0.0f << " " << 0.0f << " " << 1.0f 
-							<< std::endl << std::endl;
-
-		cameras_file_stream << "intrinsic" << std::endl;
-		cameras_file_stream << data.images[i].K(0,0) << " " << data.images[i].K(0,1) 
-							<< " " << data.images[i].K(0,2) << std::endl
-							<< data.images[i].K(1,0) << " " << data.images[i].K(1,1) 
-							<< " " << data.images[i].K(1,2) << std::endl
-							<< data.images[i].K(2,0) << " " << data.images[i].K(2,1) 
-							<< " " << data.images[i].K(2,2) << std::endl << std::endl;
-
-		cameras_file_stream << data.images[i].min_depth << " " << data.images[i].max_depth << std::endl;
-	}
-
-	return true;
-}
+// // 	return true;
+// // }

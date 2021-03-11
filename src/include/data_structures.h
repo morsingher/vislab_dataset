@@ -9,6 +9,7 @@
 #include <limits>
 #include <chrono>
 #include <unordered_map>
+#include <set>
 #include <cstdlib>
 #include <thread>
 #include <opencv2/opencv.hpp>
@@ -21,9 +22,9 @@
 struct Point
 {
 	double x, y, z;
-	std::vector<int> frame_idx;
+	std::vector<int> image_idx;
 	Point() : x(0.0f), y(0.0f), z(0.0f) {};
-	Point(const float x_coord, const float y_coord, const float z_coord) : x(x_coord), y(y_coord), z(z_coord) {};
+	Point(const float x_, const float y_, const float z_) : x(x_), y(y_), z(z_) {};
 };
 
 struct Feature
@@ -44,10 +45,9 @@ struct Neighbor
 	Neighbor(const int i, const float s) : idx(i), score(s) {};
 };
 
-struct Frame
+struct Image
 {
 	std::string filename;
-	float baseline;
 	int width, height;
 	cv::Mat_<float> K, R, t;
 	std::vector<Feature> features;

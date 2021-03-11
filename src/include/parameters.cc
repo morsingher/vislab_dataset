@@ -24,6 +24,8 @@ bool Parameters::Load(const char* params_file)
 	points_file = input_folder + d["points_file"].GetString();
 	features_file = input_folder + d["features_file"].GetString();
 
+	num_cameras = d["num_cameras"].GetInt();
+
 	// Keyframe selection
 
 	min_difference = static_cast<float>(d["min_difference"].GetDouble());
