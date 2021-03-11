@@ -1,5 +1,5 @@
 {
-	"project_path": "/home/marco/vislab_dataset/",
+	"project_path": "/home/c-morsingher/code/mvs/patchmatch/vislab_dataset/",
 	"input_folder": "data/",
 	"output_folder": "results/",
 	"poses_file": "outputPose_correct.txt",

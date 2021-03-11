@@ -8,7 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(OpenCV REQUIRED)
-find_package(PythonLibs 2.7)
 find_package(Threads REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS} 
@@ -16,10 +15,10 @@ include_directories(${OpenCV_INCLUDE_DIRS}
 					src/include)
 
 add_executable(vislab_dataset 
-			   src/include/input_dataset.cpp 
-			   src/include/math_utils.cpp
-			   src/include/view_clustering.cpp
-			   src/include/parameters.cpp
-			   src/main.cpp)
+			   src/include/input_dataset.cc 
+			   src/include/math_utils.cc
+			   src/include/view_clustering.cc
+			   src/include/parameters.cc
+			   src/main.cc)
 
-target_link_libraries(vislab_dataset ${OpenCV_LIBS} ${PYTHON_LIBRARIES} Threads::Threads)
+target_link_libraries(vislab_dataset ${OpenCV_LIBS} Threads::Threads)

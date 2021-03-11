@@ -1,7 +1,5 @@
 #include "view_clustering.h"
 
-namespace plt = matplotlibcpp;
-
 void ViewClustering::ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance)
 {
 	ComputePointCloudRange();
@@ -67,37 +65,6 @@ bool ViewClustering::WriteClustersFiles(const std::string& output_path)
 	}
 
 	return true;
-}
-
-void ViewClustering::PlotClusters()
-{
-	plt::suptitle("View clustering results");
-
-	plt::subplot(1, 2, 1);
-	for (const auto& c : clusters)
-	{
-		std::vector<float> x, z;	
-		for (const auto& p : c.point_idx)
-		{
-			x.push_back(data.points[p].x);
-			z.push_back(data.points[p].z);
-		}
-		plt::plot(x, z, "o ");
-	}
-
-	plt::subplot(1, 2, 2);
-	for (const auto& c : clusters)
-	{
-		std::vector<float> x, z;	
-		for (const auto& img : c.camera_idx)
-		{
-			x.push_back(data.images[img].t(0,0));
-			z.push_back(data.images[img].t(2,0));
-		}
-		plt::plot(x, z, "o ");
-	}
-	
-	plt::show();
 }
 
 void ViewClustering::ComputePointCloudRange()

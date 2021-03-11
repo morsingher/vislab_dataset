@@ -1,7 +1,5 @@
 #include "input_dataset.h"
 
-namespace plt = matplotlibcpp;
-
 bool InputDataset::LoadPoints(const std::string& filename)
 {
 	std::ifstream points_file_stream(filename, std::ios::in);
@@ -205,40 +203,4 @@ void InputDataset::ComputeDepthRange()
 		images[i].min_depth = min_depth;
 		images[i].max_depth = max_depth;
 	}
-}
-
-void InputDataset::PlotPointCloud()
-{
-	std::vector<float> x, z;
-	for (const auto& p : points)
-	{
-		x.push_back(p.x);
-		z.push_back(p.z);
-	}
-	plt::plot(x, z, "o ");
-	plt::show();
-}
-
-void InputDataset::PlotTrajectory()
-{
-	std::vector<float> x, z;
-	for (const auto& img : images)
-	{
-		x.push_back(img.t(0,0));
-		z.push_back(img.t(2,0));
-	}
-	plt::plot(x, z, "o ");
-	plt::show();
-}
-
-void InputDataset::PlotFilteredTrajectory()
-{
-	std::vector<float> x, z;
-	for (const auto& i : filt)
-	{
-		x.push_back(images[i].t(0,0));
-		z.push_back(images[i].t(2,0));
-	}
-	plt::plot(x, z, "o ");
-	plt::show();
 }

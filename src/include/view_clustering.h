@@ -13,14 +13,9 @@ public:
 	std::vector<Cluster> clusters;
 	
 	ViewClustering(InputDataset& input_data) : data(input_data) {};
-
 	void ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance);
-	
 	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
-	
 	bool WriteClustersFiles(const std::string& output_path);
-
-	void PlotClusters();
 	
 private:
 

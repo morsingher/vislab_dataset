@@ -13,8 +13,10 @@
 #include <thread>
 #include <opencv2/opencv.hpp>
 
-#define WITHOUT_NUMPY
-#include "matplotlibcpp.h"
+// Linux headers (for mkdir)
+
+#include <sys/stat.h>
+#include <sys/types.h>
 
 struct Point
 {

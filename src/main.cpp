@@ -108,12 +108,6 @@ int main(int argc, char** argv)
 	elapsed_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1e9;
 	std::cout << "Done! Computed neighbors in " << elapsed_time << " s." << std::endl << std::endl;
 
-	// Showing results
-
-	std::cout << "Showing results, press ENTER to exit!" << std::endl;
-	view_clustering.PlotClusters();
-	std::cin.get();
-
 	// Write files for PatchMatchNet
 
 	std::cout << "Saving results in PatchMatchNet format..." << std::endl;
