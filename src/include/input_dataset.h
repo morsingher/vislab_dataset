@@ -9,13 +9,15 @@ class InputDataset
 public:
 
 	std::vector<Point> points;
-	std::vector<Image> images;
+	std::vector<Frame> images;
 	std::vector<int> filt;
+
+	int num_frames, num_cameras;
 
 	// Input
 
 	bool LoadPoints(const std::string& filename);
-	bool LoadFeatures(const std::string& filename, const int num_cameras);
+	bool LoadFeatures(const std::string& filename);
 	bool LoadPoses(const std::string& filename);
 	
 	// Process

@@ -22,7 +22,8 @@
 struct Point
 {
 	double x, y, z;
-	std::vector<int> image_idx;
+	int r, g, b; // TODO
+	std::vector<int> image_idx; // UUID
 	Point() : x(0.0f), y(0.0f), z(0.0f) {};
 	Point(const float x_, const float y_, const float z_) : x(x_), y(y_), z(z_) {};
 };
@@ -39,10 +40,10 @@ struct Feature
 
 struct Neighbor
 {
-	int idx;
+	int uuid;
 	float score;
-	Neighbor() : idx(-1), score(0.0f) {}; 
-	Neighbor(const int i, const float s) : idx(i), score(s) {};
+	Neighbor() : uuid(-1), score(0.0f) {}; 
+	Neighbor(const int i, const float s) : uuid(i), score(s) {};
 };
 
 struct Image
@@ -55,10 +56,12 @@ struct Image
 	std::vector<Neighbor> neighbors;
 };
 
+typedef std::vector<Image> Frame;
+
 struct Cluster
 {
 	std::vector<int> point_idx;
-	std::vector<int> camera_idx;
+	std::set<int> camera_idx; // UUID
 	std::unordered_map<int, std::vector<Neighbor>> neighbors;
 };
 

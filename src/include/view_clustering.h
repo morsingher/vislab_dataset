@@ -27,7 +27,7 @@ private:
 	void GroupByCameras(const int min_cameras, const int num_blocks_x);
 	
 	void ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
-	float ComputeViewSelectionScore(const std::vector<Feature>& idx, const std::pair<int, int>& ref, const std::pair<int, int>& src, const float sigma_0, const float sigma_1, const float theta_0);
+	float ComputeViewSelectionScore(const std::vector<Feature>& idx, const int ref_frame, const int ref_sensor, const int src_frame, const int src_sensor, const float sigma_0, const float sigma_1, const float theta_0);
 	
 	bool WriteCamerasFiles(const std::string& path, const int idx);
 	bool WriteNeighborsFile(const std::string& path, const int idx);

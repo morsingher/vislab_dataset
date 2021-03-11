@@ -30,6 +30,7 @@ int main(int argc, char** argv)
 	std::cout << "Loading input Ambarella dataset..." << std::endl;
 
 	InputDataset dataset;
+	dataset.num_cameras = params.num_cameras;
 
 	// state.bap file (points)
 
@@ -41,7 +42,7 @@ int main(int argc, char** argv)
 
 	// state.bin file (features)
 
-	if (!dataset.LoadFeatures(params.features_file, params.num_cameras))
+	if (!dataset.LoadFeatures(params.features_file))
 	{
 		std::cout << "Failed to load features" << std::endl;
 		return EXIT_FAILURE;
@@ -57,36 +58,36 @@ int main(int argc, char** argv)
 
 	std::cout << "Done!" << std::endl << std::endl;
 
-	// // Filter out redundant poses
+	// Filter out redundant poses
 
-	// std::cout << "Filtering poses by selecting keyframes..." << std::endl;
-	// dataset.FilterPoses(params.min_difference);
-	// std::cout << "Done! Selected " << dataset.filt.size() << " keyframes" << std::endl << std::endl;
+	std::cout << "Filtering poses by selecting keyframes..." << std::endl;
+	dataset.FilterPoses(params.min_difference);
+	std::cout << "Done! Selected " << dataset.filt.size() << " keyframes" << std::endl << std::endl;
 
-	// // Compute depth range
+	// Compute depth range
 
-	// std::cout << "Computing depth range for selected keyframes..." << std::endl;
-	// dataset.ComputeDepthRange();
-	// std::cout << "Done!" << std::endl << std::endl;
+	std::cout << "Computing depth range for selected keyframes..." << std::endl;
+	dataset.ComputeDepthRange();
+	std::cout << "Done!" << std::endl << std::endl;
 
-	// // Assign images to each point and remove useless points
+	// Assign images to each point and remove useless points
 
-	// std::cout << "Assigning keyframes to each visible point..." << std::endl;
-	// dataset.BuildFeatureTracks();
-	// std::cout << "Done! There are " << dataset.points.size() << " visible points" << std::endl << std::endl;
+	std::cout << "Assigning keyframes to each visible point..." << std::endl;
+	dataset.BuildFeatureTracks();
+	std::cout << "Done! There are " << dataset.points.size() << " visible points" << std::endl << std::endl;
 
-	// // Cluster points and cameras
+	// Cluster points and cameras
 
-	// std::cout << "Clustering points and cameras..." << std::endl;
-	// ViewClustering view_clustering(dataset);
-	// view_clustering.ClusterViews(params.block_size, params.min_points, params.min_cameras, params.max_distance);
-	// std::cout << "Done! Built " << view_clustering.clusters.size() << " clusters" << std::endl << std::endl;
+	std::cout << "Clustering points and cameras..." << std::endl;
+	ViewClustering view_clustering(dataset);
+	view_clustering.ClusterViews(params.block_size, params.min_points, params.min_cameras, params.max_distance);
+	std::cout << "Done! Built " << view_clustering.clusters.size() << " clusters" << std::endl << std::endl;
 
-	// // Compute neighbors
+	// Compute neighbors
 
-	// std::cout << "Computing neighbors for each cluster..." << std::endl;
-	// view_clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
-	// std::cout << "Done!" << std::endl << std::endl;
+	std::cout << "Computing neighbors for each cluster..." << std::endl;
+	view_clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
+	std::cout << "Done!" << std::endl << std::endl;
 
 	// // Write files for PatchMatchNet
 
