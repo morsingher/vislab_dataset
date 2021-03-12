@@ -108,9 +108,31 @@ bool ViewClustering::WriteClustersFiles(const std::string& output_path, const in
 			std::cout << "Failed to write neighbors file for cluster " << i << std::endl;
 			return false;
 		}
+
+		if (!WriteImages(cluster_folder, i))
+		{
+			std::cout << "Failed to write images for cluster " << i << std::endl;
+			return false;
+		}
 	}
 
 	return true;
+}
+
+void ViewClustering::PrintReport()
+{
+	int cam_count = 0;
+	int point_count = 0;
+	for (int i = 0; i < clusters.size(); i++)
+	{
+		const int num_points = clusters[i].point_idx.size();
+		const int num_cams = clusters[i].camera_idx.size();
+		std::cout << "Cluster " << i << " has " << num_points << " points and " << num_cams << " cameras" << std::endl;
+		cam_count += num_cams;
+		point_count += num_points;
+	}
+	std::cout << std::endl << "Total points: " << point_count << std::endl;
+	std::cout << "Total cameras: " << cam_count << std::endl << std::endl;
 }
 
 void ViewClustering::ComputePointCloudRange()
@@ -143,14 +165,18 @@ void ViewClustering::GroupByPoints(const int min_points, const int num_blocks_x)
 	{
 		if (clusters[i].point_idx.size() > 0 && clusters[i].point_idx.size() < min_points)
 		{
-			std::vector<int> neighbors = { i - 1, // Left
-										   i + 1, // Right
-										   i - num_blocks_x, // Up 
+
+			std::vector<int> neighbors = { i - num_blocks_x, // Up 
 										   i + num_blocks_x, // Down
 										   i - num_blocks_x - 1, // Up-left 
 										   i - num_blocks_x + 1, // Up-right
 										   i + num_blocks_x - 1, // Down-left
 										   i + num_blocks_x + 1 }; // Down-right
+
+			if (i % num_blocks_x != 0)
+				neighbors.push_back(i - 1);
+			if (i % num_blocks_x != num_blocks_x - 1)
+				neighbors.push_back(i + 1);
 
 			bool isolated = true;
 			int smallest_idx = -1;
@@ -191,7 +217,7 @@ void ViewClustering::AssignCamerasToBlock(const float max_distance)
 	{
 		for (const auto& p : c.point_idx) // Points in the cluster 
 		{
-			for (const auto& cam : data.points[p].image_idx) // Cameras that see points in the cluster
+			for (const auto& cam : data.points[p].image_idx) // Cameras that see the point
 			{
 				const int uuid = cam.first;
 				const int sensor = uuid / data.num_frames;
@@ -217,14 +243,17 @@ void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_
 			clusters[i].camera_idx.size() < min_cameras && 
 			clusters[i].point_idx.size() > 0)
 		{
-			std::vector<int> neighbors = { i - 1, // Left
-										   i + 1, // Right
-										   i - num_blocks_x, // Up 
+			std::vector<int> neighbors = { i - num_blocks_x, // Up 
 										   i + num_blocks_x, // Down
 										   i - num_blocks_x - 1, // Up-left 
 										   i - num_blocks_x + 1, // Up-right
 										   i + num_blocks_x - 1, // Down-left
 										   i + num_blocks_x + 1 }; // Down-right
+
+			if (i % num_blocks_x != 0)
+				neighbors.push_back(i - 1);
+			if (i % num_blocks_x != num_blocks_x - 1)
+				neighbors.push_back(i + 1);
 
 			int smallest_idx = -1;
 			for (const auto& idx : neighbors)
@@ -252,11 +281,11 @@ void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_
 					clusters[smallest_idx].camera_idx.insert(cam);
 				}
 			}
-			// else
-			// {
-			// 	std::cout << "The cluster is isolated" << std::endl;
-			// 	std::cin.get();
-			// }
+			else
+			{
+				std::cout << "The cluster is isolated" << std::endl;
+				std::cin.get();
+			}
 
 			clusters[i].camera_idx.clear(); // Set size to zero in order to remove later
 		}
@@ -491,6 +520,45 @@ bool ViewClustering::WriteColmapPointsFile(const std::string& path, const int id
 		}
 
 		points_file_stream << std::endl;
+	}
+
+	return true;
+}
+
+// DISCLAIMER: VERY STUPID FUNCTION, A LOT OF THINGS SHOULD BE FIXED LIKE RESCALING OF CAMERAS,
+// RESCALING OF FEATURES AND SO ON
+
+bool ViewClustering::WriteImages(const std::string& path, const int idx)
+{
+	const std::string img_folder = path + "images/";
+	if (mkdir(img_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
+	{
+		std::cout << "Failed to create the images directory for cluster " << idx << std::endl;
+		return false;
+	}
+
+	int count = 0;
+	for (const auto& uuid : clusters[idx].camera_idx)
+	{
+		const int sensor = uuid / data.num_frames;
+		const int frame = uuid - sensor * data.num_frames;
+
+		const std::string input_path = "/home/c-morsingher/datasets/vislab/full_sequence/full_size/FC/";
+		const std::string filename = input_path + data.images[frame][sensor].filename;
+
+		cv::Mat img = cv::imread(filename, cv::IMREAD_COLOR);
+		if (img.empty())
+		{
+			std::cout << "Failed to load image " << filename << std::endl;
+			return false;
+		}
+
+		cv::resize(img, img, cv::Size(), 0.25, 0.25);
+		
+		char buffer[50];
+		sprintf(buffer, "%.8d.jpg", count);
+		imwrite(img_folder + std::string(buffer), img);
+		count++;
 	}
 
 	return true;

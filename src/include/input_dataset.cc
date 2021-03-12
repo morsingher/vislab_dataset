@@ -56,7 +56,7 @@ bool InputDataset::LoadFeatures(const std::string& filename)
 	features_file_stream.read((char*) &buff_64, sizeof(uint64_t));
 	const int num_features = buff_64;
 
-	std::cout << "There are " << num_features << " features to load" << std::endl; 
+	// std::cout << "There are " << num_features << " features to load" << std::endl; 
 
 	uint32_t buff;
 	features_file_stream.read((char*) &buff, sizeof(uint32_t));
@@ -103,7 +103,10 @@ bool InputDataset::LoadFeatures(const std::string& filename)
 		features_file_stream.read((char*) &buff, sizeof(uint32_t));
 		const int frame = buff;
 
-		images[frame][sensor].features.push_back(new_feature);
+		if (sensor == 0)
+		{
+			images[frame][sensor].features.push_back(new_feature);
+		}
 
 		count++;
 	}
@@ -144,7 +147,7 @@ bool InputDataset::LoadPoses(const std::string& filename)
 						>> images[count][i].R(2,0) >> images[count][i].R(2,1) >> images[count][i].R(2,2) >> images[count][i].t(2,0);
 
 			char buffer[50];
-			sprintf(buffer, "%.6d.png", count);
+			sprintf(buffer, "%.8d.jpg", count);
 			images[count][i].filename = std::string(buffer);
 		}
 
@@ -156,25 +159,30 @@ bool InputDataset::LoadPoses(const std::string& filename)
 
 void InputDataset::FilterPoses(const float min_dist)
 {
-	int prev = 0;
-	filt.push_back(prev); 
+	// int prev = 0;
+	// filt.push_back(prev); 
 
-	for (int i = 1; i < images.size(); i++)
+	// for (int i = 1; i < images.size(); i++)
+	// {
+	// 	const float dist = ComputePoseDistance(images[prev][0].t, images[i][0].t);
+	// 	if (dist > min_dist)
+	// 	{
+	// 		prev = i;
+	// 		filt.push_back(prev);
+	// 	}
+	// } 
+
+	for (int i = 0; i < num_frames; i += 10)
 	{
-		const float dist = ComputePoseDistance(images[prev][0].t, images[i][0].t);
-		if (dist > min_dist)
-		{
-			prev = i;
-			filt.push_back(prev);
-		}
-	} 
+		filt.push_back(i);
+	}
 }
 
 void InputDataset::ComputeDepthRange()
 {
 	for (const auto& i : filt)
 	{
-		for (int j = 0; j < 6; j++)
+		for (int j = 0; j < num_cameras; j++)
 		{
 			float max_depth = 0.0f;
 			float min_depth = std::numeric_limits<float>::max();
@@ -203,6 +211,7 @@ void InputDataset::ComputeDepthRange()
 void InputDataset::BuildFeatureTracks()
 {
 	for (const auto& i : filt)
+	// for (int i = 0; i < num_frames; i++)
 	{
 		for (int j = 0; j < num_cameras; j++)
 		{

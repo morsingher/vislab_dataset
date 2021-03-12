@@ -83,6 +83,8 @@ int main(int argc, char** argv)
 	view_clustering.ClusterViews(params.block_size, params.min_points, params.min_cameras, params.max_distance);
 	std::cout << "Done! Built " << view_clustering.clusters.size() << " clusters" << std::endl << std::endl;
 
+	view_clustering.PrintReport();
+
 	// Compute neighbors
 
 	std::cout << "Computing neighbors for each cluster..." << std::endl;
