@@ -4,4 +4,4 @@ if [ -d "./results" ]; then
 	rm -rf results
 fi
 mkdir results
-./build/vislab_dataset ./config/config.json
+./build/multi_view_clustering ./config/config.json

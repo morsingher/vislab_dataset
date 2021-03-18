@@ -5,7 +5,7 @@
 	"poses_file": "poses.txt",
 	"points_file": "points.bap",
 	"features_file": "features.bin",
-	"num_cameras": 1,
+	"num_cameras": 6,
 	"min_difference": 1.0,
 	"block_size": 20,
 	"min_points": 100,

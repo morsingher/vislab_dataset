@@ -91,11 +91,6 @@ bool Clustering::WriteClustersFiles(const std::string& output_path, const int nu
 	for (int i = 0; i < clusters.size(); i++)
 	{
 		const std::string cluster_folder = output_path + "cluster_" + std::to_string(i) + "/";
-		// if (mkdir(cluster_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
-		// {
-		// 	std::cout << "Failed to create the directory for cluster " << i << std::endl;
-		// 	return false;
-		// }
 
 		if (!WriteCamerasFiles(cluster_folder, i))
 		{
@@ -281,11 +276,11 @@ void Clustering::GroupByCameras(const int min_cameras, const int num_blocks_x)
 					clusters[smallest_idx].camera_idx.insert(cam);
 				}
 			}
-			else
-			{
-				std::cout << "The cluster is isolated" << std::endl;
-				std::cin.get();
-			}
+			// else
+			// {
+			// 	std::cout << "The cluster is isolated" << std::endl;
+			// 	std::cin.get();
+			// }
 
 			clusters[i].camera_idx.clear(); // Set size to zero in order to remove later
 		}

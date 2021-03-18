@@ -54,8 +54,6 @@ bool InputDataset::LoadFeatures(const std::string& filename)
 	features_file_stream.read((char*) &buff_64, sizeof(uint64_t));
 	const int num_features = buff_64;
 
-	// std::cout << "There are " << num_features << " features to load" << std::endl; 
-
 	uint32_t buff;
 	features_file_stream.read((char*) &buff, sizeof(uint32_t));
 	num_frames = buff;
@@ -101,10 +99,7 @@ bool InputDataset::LoadFeatures(const std::string& filename)
 		features_file_stream.read((char*) &buff, sizeof(uint32_t));
 		const int frame = buff;
 
-		if (sensor == 0)
-		{
-			images[frame][sensor].features.push_back(new_feature);
-		}
+		images[frame][sensor].features.push_back(new_feature);
 
 		count++;
 	}
@@ -180,7 +175,7 @@ void InputDataset::ComputeDepthRange()
 {
 	for (const auto& i : filt)
 	{
-		for (int j = 0; j < 1; j++)
+		for (int j = 0; j < num_cameras; j++)
 		{
 			float max_depth = 0.0f;
 			float min_depth = std::numeric_limits<float>::max();
@@ -201,10 +196,7 @@ void InputDataset::ComputeDepthRange()
 			}
 
 			images[i][j].min_depth = min_depth;
-			images[i][j].max_depth = std::max(max_depth, 80.0f);
-
-			// std::cout << "Depth range: (" << min_depth << ", " << max_depth << ")" << std::endl;
-			// std::cin.get();
+			images[i][j].max_depth = std::max(max_depth, 80.0f); // Fix
 		}
 	}
 }
@@ -212,7 +204,6 @@ void InputDataset::ComputeDepthRange()
 void InputDataset::BuildFeatureTracks()
 {
 	for (const auto& i : filt)
-	// for (int i = 0; i < num_frames; i++)
 	{
 		for (int j = 0; j < num_cameras; j++)
 		{
