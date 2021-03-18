@@ -1,9 +1,9 @@
-#ifndef VIEW_CLUSTERING_H
-#define VIEW_CLUSTERING_H
+#ifndef CLUSTERING_H
+#define CLUSTERING_H
 
 #include "input_dataset.h"
 
-class ViewClustering
+class Clustering
 {
 	InputDataset& data;
 	float x_min, x_max, z_min, z_max;
@@ -12,7 +12,7 @@ public:
 
 	std::vector<Cluster> clusters;
 	
-	ViewClustering(InputDataset& input_data) : data(input_data) {};
+	Clustering(InputDataset& input_data) : data(input_data) {};
 	void ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance);
 	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
 	bool WriteClustersFiles(const std::string& output_path, const int num_neighbors);

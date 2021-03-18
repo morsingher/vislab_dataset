@@ -1,5 +1,5 @@
 #include "input_dataset.h"
-#include "view_clustering.h"
+#include "clustering.h"
 #include "parameters.h"
 
 int main(int argc, char** argv) 
@@ -58,6 +58,13 @@ int main(int argc, char** argv)
 
 	std::cout << "Done!" << std::endl << std::endl;
 
+	// Aligning points and poses
+
+	std::cout << "Aligning points and poses..." << std::endl;
+	const float alpha =  - 9.3 * M_PI / 180.0;
+	dataset.AlignData(alpha);
+	std::cout << "Done!" << std::endl << std::endl;
+
 	// Filter out redundant poses
 
 	std::cout << "Filtering poses by selecting keyframes..." << std::endl;
@@ -79,22 +86,22 @@ int main(int argc, char** argv)
 	// Cluster points and cameras
 
 	std::cout << "Clustering points and cameras..." << std::endl;
-	ViewClustering view_clustering(dataset);
-	view_clustering.ClusterViews(params.block_size, params.min_points, params.min_cameras, params.max_distance);
-	std::cout << "Done! Built " << view_clustering.clusters.size() << " clusters" << std::endl << std::endl;
+	Clustering clustering(dataset);
+	clustering.ClusterViews(params.block_size, params.min_points, params.min_cameras, params.max_distance);
+	std::cout << "Done! Built " << clustering.clusters.size() << " clusters" << std::endl << std::endl;
 
-	view_clustering.PrintReport();
+	clustering.PrintReport();
 
 	// Compute neighbors
 
 	std::cout << "Computing neighbors for each cluster..." << std::endl;
-	view_clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
+	clustering.ComputeNeighbors(params.num_neighbors, params.sigma_0, params.sigma_1, params.theta_0);
 	std::cout << "Done!" << std::endl << std::endl;
 
 	// Write files in COLMAP format
 
 	std::cout << "Saving results in COLMAP format..." << std::endl;
-	if (!view_clustering.WriteColmapFiles(params.output_folder))
+	if (!clustering.WriteColmapFiles(params.output_folder))
 	{
 		std::cout << "Failed to save results in COLMAP format" << std::endl;
 		return EXIT_FAILURE;
@@ -104,7 +111,7 @@ int main(int argc, char** argv)
 	// Write files in standard format
 
 	std::cout << "Saving results in standard format..." << std::endl;
-	if (!view_clustering.WriteClustersFiles(params.output_folder, params.num_neighbors))
+	if (!clustering.WriteClustersFiles(params.output_folder, params.num_neighbors))
 	{
 		std::cout << "Failed to save results in standard format" << std::endl;
 		return EXIT_FAILURE;

@@ -35,7 +35,7 @@ Point TransformPointFromCamToWorld(const cv::Mat_<float>& R, const cv::Mat_<floa
 {
 	cv::Mat_<float> p_cam = cv::Mat::eye(3, 1, CV_32F);
 	p_cam << p.x, p.y, p.z;
-	cv::Mat_<float> p_world = R * p_world + t;
+	cv::Mat_<float> p_world = R * p_cam + t;
 	return Point(p_world(0,0), p_world(1,0), p_world(2,0));
 }
 

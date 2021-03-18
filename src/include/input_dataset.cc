@@ -9,8 +9,6 @@ bool InputDataset::LoadPoints(const std::string& filename)
 		return false;
 	}
 
-	size_t num_points;
-
 	std::string line;
 	std::getline(points_file_stream, line);
 	std::istringstream line_stream(line);
@@ -172,7 +170,7 @@ void InputDataset::FilterPoses(const float min_dist)
 	// 	}
 	// } 
 
-	for (int i = 0; i < num_frames; i += 10)
+	for (int i = 0; i < num_frames; i += 5)
 	{
 		filt.push_back(i);
 	}
@@ -182,7 +180,7 @@ void InputDataset::ComputeDepthRange()
 {
 	for (const auto& i : filt)
 	{
-		for (int j = 0; j < num_cameras; j++)
+		for (int j = 0; j < 1; j++)
 		{
 			float max_depth = 0.0f;
 			float min_depth = std::numeric_limits<float>::max();
@@ -203,7 +201,10 @@ void InputDataset::ComputeDepthRange()
 			}
 
 			images[i][j].min_depth = min_depth;
-			images[i][j].max_depth = max_depth;
+			images[i][j].max_depth = std::max(max_depth, 80.0f);
+
+			// std::cout << "Depth range: (" << min_depth << ", " << max_depth << ")" << std::endl;
+			// std::cin.get();
 		}
 	}
 }
@@ -226,4 +227,29 @@ void InputDataset::BuildFeatureTracks()
 
 	const auto lambda_size = [](const Point& p) { return p.image_idx.empty(); };
 	points.erase(std::remove_if(points.begin(), points.end(), lambda_size), points.end());
+}
+
+void InputDataset::AlignData(const float alpha)
+{
+	cv::Mat_<float> R = cv::Mat::eye(3, 3, CV_32F);
+	R << 1.0, 0.0, 0.0, 
+		 0.0, std::cos(alpha), -std::sin(alpha),
+		 0.0, std::sin(alpha), std::cos(alpha);
+
+	for (int i = 0; i < num_frames; i++)
+	{
+		images[i][0].R = R * images[i][0].R;
+		images[i][0].t = R * images[i][0].t;
+	}
+
+	for (int i = 0; i < num_points; i++)
+	{
+		cv::Mat_<float> p = cv::Mat::zeros(3, 1, CV_32F);
+		p << points[i].x, points[i].y, points[i].z;
+
+		cv::Mat_<float> p_rot = R * p;
+		points[i].x = p_rot(0,0);
+		points[i].y = p_rot(1,0);
+		points[i].z = p_rot(2,0);
+	}
 }

@@ -1,6 +1,6 @@
-#include "view_clustering.h"
+#include "clustering.h"
 
-void ViewClustering::ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance)
+void Clustering::ClusterViews(const int block_size, const int min_points, const int min_cameras, const float max_distance)
 {
 	ComputePointCloudRange();
 
@@ -20,7 +20,7 @@ void ViewClustering::ClusterViews(const int block_size, const int min_points, co
 	clusters.erase(std::remove_if(clusters.begin(), clusters.end(), lambda_size), clusters.end());
 }
 
-void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
+void Clustering::ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
 {
 	std::vector<std::thread> th_vec;
 
@@ -34,7 +34,7 @@ void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma
 			std::sort(data.images[frame][sensor].features.begin(),
 					  data.images[frame][sensor].features.end());
 		}
-		th_vec.push_back(std::thread(&ViewClustering::ComputeNeighborsForCluster, this, i, num_neighbors, sigma_0, sigma_1, theta_0));
+		th_vec.push_back(std::thread(&Clustering::ComputeNeighborsForCluster, this, i, num_neighbors, sigma_0, sigma_1, theta_0));
 	}
 
 	for (auto& th : th_vec)
@@ -43,7 +43,7 @@ void ViewClustering::ComputeNeighbors(const int num_neighbors, const float sigma
 	}
 }
 
-bool ViewClustering::WriteColmapFiles(const std::string& output_path)
+bool Clustering::WriteColmapFiles(const std::string& output_path)
 {
 	for (int i = 0; i < clusters.size(); i++)
 	{
@@ -86,7 +86,7 @@ bool ViewClustering::WriteColmapFiles(const std::string& output_path)
 	return true;
 }
 
-bool ViewClustering::WriteClustersFiles(const std::string& output_path, const int num_neighbors)
+bool Clustering::WriteClustersFiles(const std::string& output_path, const int num_neighbors)
 {
 	for (int i = 0; i < clusters.size(); i++)
 	{
@@ -119,7 +119,7 @@ bool ViewClustering::WriteClustersFiles(const std::string& output_path, const in
 	return true;
 }
 
-void ViewClustering::PrintReport()
+void Clustering::PrintReport()
 {
 	int cam_count = 0;
 	int point_count = 0;
@@ -135,7 +135,7 @@ void ViewClustering::PrintReport()
 	std::cout << "Total cameras: " << cam_count << std::endl << std::endl;
 }
 
-void ViewClustering::ComputePointCloudRange()
+void Clustering::ComputePointCloudRange()
 {
 	const auto cmp_x = [](const Point& p1, const Point& p2) { return p1.x < p2.x; }; 
 	const auto minmax_x = std::minmax_element(data.points.begin(), data.points.end(), cmp_x);
@@ -148,7 +148,7 @@ void ViewClustering::ComputePointCloudRange()
 	z_max = minmax_z.second->z;
 }
 
-void ViewClustering::AssignPointsToBlock(const int block_size, const int num_blocks_x)
+void Clustering::AssignPointsToBlock(const int block_size, const int num_blocks_x)
 {
 	for (int i = 0; i < data.points.size(); i++)
 	{		
@@ -159,7 +159,7 @@ void ViewClustering::AssignPointsToBlock(const int block_size, const int num_blo
 	}
 }
 
-void ViewClustering::GroupByPoints(const int min_points, const int num_blocks_x)
+void Clustering::GroupByPoints(const int min_points, const int num_blocks_x)
 {
 	for (int i = 0; i < clusters.size(); i++)
 	{
@@ -211,7 +211,7 @@ void ViewClustering::GroupByPoints(const int min_points, const int num_blocks_x)
 	}
 }
 
-void ViewClustering::AssignCamerasToBlock(const float max_distance)
+void Clustering::AssignCamerasToBlock(const float max_distance)
 {
 	for (auto& c : clusters) // Cluster
 	{
@@ -235,7 +235,7 @@ void ViewClustering::AssignCamerasToBlock(const float max_distance)
 	}
 }
 
-void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_x)
+void Clustering::GroupByCameras(const int min_cameras, const int num_blocks_x)
 {
 	for (int i = 0; i < clusters.size(); i++)
 	{
@@ -292,7 +292,7 @@ void ViewClustering::GroupByCameras(const int min_cameras, const int num_blocks_
 	}
 }
 
-void ViewClustering::ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
+void Clustering::ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
 {
 	for (const auto& ref : clusters[i].camera_idx)
 	{
@@ -327,7 +327,7 @@ void ViewClustering::ComputeNeighborsForCluster(const int i, const int num_neigh
 	}
 }
 
-float ViewClustering::ComputeViewSelectionScore(const std::vector<Feature>& idx, 
+float Clustering::ComputeViewSelectionScore(const std::vector<Feature>& idx, 
 												const int ref_frame,
 												const int ref_sensor,
 												const int src_frame,
@@ -354,7 +354,7 @@ float ViewClustering::ComputeViewSelectionScore(const std::vector<Feature>& idx,
 	return score;
 }
 
-bool ViewClustering::WriteNeighborsFile(const std::string& path, const int idx, const int num_neighbors)
+bool Clustering::WriteNeighborsFile(const std::string& path, const int idx, const int num_neighbors)
 {
 	const std::string filename = path + std::string("neighbors.txt");
 
@@ -372,7 +372,7 @@ bool ViewClustering::WriteNeighborsFile(const std::string& path, const int idx, 
 	for (const auto& i : c.camera_idx)
 	{
 		neighbors_file_stream << i << std::endl;
-		neighbors_file_stream << 10 << " ";
+		neighbors_file_stream << c.neighbors[i].size() << " ";
 		for (auto& n : c.neighbors[i])
 		{
 			neighbors_file_stream << n.uuid << " " << n.score << " ";
@@ -383,7 +383,7 @@ bool ViewClustering::WriteNeighborsFile(const std::string& path, const int idx, 
 	return true;
 }
 
-bool ViewClustering::WriteCamerasFiles(const std::string& path, const int idx)
+bool Clustering::WriteCamerasFiles(const std::string& path, const int idx)
 {
 	const std::string cam_folder = path + "cameras/";
 	if (mkdir(cam_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)
@@ -435,7 +435,7 @@ bool ViewClustering::WriteCamerasFiles(const std::string& path, const int idx)
 	return true;
 }
 
-bool ViewClustering::WriteColmapCamerasFile(const std::string& path, const int idx)
+bool Clustering::WriteColmapCamerasFile(const std::string& path, const int idx)
 {
 	const std::string filename = path + "cameras.txt";
 	std::ofstream cameras_file_stream(filename, std::ios::out);
@@ -458,7 +458,7 @@ bool ViewClustering::WriteColmapCamerasFile(const std::string& path, const int i
 	return true;
 }
 
-bool ViewClustering::WriteColmapImagesFile(const std::string& path, const int idx)
+bool Clustering::WriteColmapImagesFile(const std::string& path, const int idx)
 {
 	const std::string filename = path + "images.txt";
 	std::ofstream images_file_stream(filename, std::ios::out);
@@ -495,7 +495,7 @@ bool ViewClustering::WriteColmapImagesFile(const std::string& path, const int id
 	return true;
 }
 
-bool ViewClustering::WriteColmapPointsFile(const std::string& path, const int idx)
+bool Clustering::WriteColmapPointsFile(const std::string& path, const int idx)
 {
 	const std::string filename = path + "points3D.txt";
 	std::ofstream points_file_stream(filename, std::ios::out);
@@ -528,7 +528,7 @@ bool ViewClustering::WriteColmapPointsFile(const std::string& path, const int id
 // DISCLAIMER: VERY STUPID FUNCTION, A LOT OF THINGS SHOULD BE FIXED LIKE RESCALING OF CAMERAS,
 // RESCALING OF FEATURES AND SO ON
 
-bool ViewClustering::WriteImages(const std::string& path, const int idx)
+bool Clustering::WriteImages(const std::string& path, const int idx)
 {
 	const std::string img_folder = path + "images/";
 	if (mkdir(img_folder.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) < 0)

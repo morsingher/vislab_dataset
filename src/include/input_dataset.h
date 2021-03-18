@@ -12,7 +12,7 @@ public:
 	std::vector<Frame> images;
 	std::vector<int> filt;
 
-	int num_frames, num_cameras;
+	int num_frames, num_cameras, num_points;
 
 	// Input
 
@@ -25,6 +25,7 @@ public:
 	void FilterPoses(const float min_dist);
 	void ComputeDepthRange();
 	void BuildFeatureTracks();
+	void AlignData(const float alpha);
 };
 
 #endif
