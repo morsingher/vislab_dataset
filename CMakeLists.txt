@@ -12,11 +12,15 @@ find_package(Threads REQUIRED)
 
 include_directories(${OpenCV_INCLUDE_DIRS} 
 					src/include/common
-					src/include/io)
+					src/include/io
+					src/include/math
+					src/include/clustering)
 
 add_executable(multi_view_clustering 
 			   src/include/common/parameters.cc
 			   src/include/io/input_dataset.cc
+			   src/include/math/math_utils.cc
+			   src/include/clustering/clustering.cc
 			   src/main.cc)
 
 target_link_libraries(multi_view_clustering ${OpenCV_LIBS} Threads::Threads)

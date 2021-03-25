@@ -1,5 +1,4 @@
-#include "parameters.h"
-#include "input_dataset.h"
+#include "clustering.h"
 
 int main(int argc, char** argv) 
 {
@@ -35,11 +34,14 @@ int main(int argc, char** argv)
 	}
 	std::cout << "Done!" << std::endl << std::endl;
 
-	// Filter out redundant poses
+	// Multi-view clustering
 
-	std::cout << "Filtering redundant poses, keeping a pose each " << params.min_dist << " m..." << std::endl;
-	dataset.FilterPoses(params.min_dist);
+	std::cout << "Starting multi-view clustering algorithm..." << std::endl;
+	Clustering mvc(params, dataset);
+	mvc.ComputeClusters();
 	std::cout << "Done!" << std::endl << std::endl;
+
+	// Write files
 
 	return EXIT_SUCCESS;
 }

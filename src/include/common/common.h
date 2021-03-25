@@ -34,9 +34,11 @@
 struct Point
 {
 	double x, y, z;
+	std::vector<std::pair<int, int>> image_idx; // (UUID, feature index)
 	// int r, g, b; // TODO
 	// float error; // TODO
-	// std::vector<std::pair<int, int>> image_idx; // UUID
+	Point() : x(0.0), y(0.0), z(0.0) {};
+	Point(const double _x, const double _y, const double _z) : x(_x), y(_y), z(_z) {};
 };
 
 struct Feature
@@ -63,17 +65,17 @@ struct Image
 	int width, height;
 	cv::Mat_<float> K, R, t;
 	std::vector<Feature> features;
-	float min_depth, max_depth;
+	float min_depth = 0.0f, max_depth = 1.0f;
 	// std::vector<Neighbor> neighbors;
 };
 
 typedef std::vector<Image> Frame;
 
-// struct Cluster
-// {
-// 	std::vector<int> point_idx;
-// 	std::set<int> camera_idx; // UUID
-// 	std::unordered_map<int, std::vector<Neighbor>> neighbors;
-// };
+struct Cluster
+{
+	std::vector<int> point_idx;
+	// std::set<int> camera_idx; // UUID
+	// std::unordered_map<int, std::vector<Neighbor>> neighbors;
+};
 
 #endif

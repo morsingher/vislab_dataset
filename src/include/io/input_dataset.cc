@@ -1,36 +1,31 @@
 #include "input_dataset.h"
 
-InputDataset::InputDataset(const Parameters& params) : cameras_folder(params.cameras_folder),
-													   images_folder(params.images_folder),
-													   poses_file(params.poses_file),
-													   features_file(params.features_file),
-													   points_file(params.points_file),
-													   num_cameras(params.num_cameras)
-													   {};
+InputDataset::InputDataset(const Parameters& p) : params(p) {};
+
 bool InputDataset::Load()
 {
-	std::cout << "Loading points from: " << points_file << std::endl;
+	std::cout << "Loading points from: " << params.points_file << std::endl;
 	if(!LoadPoints())
 	{
 		std::cout << "Failed to load points!" << std::endl;
 		return false;
 	}
 
-	std::cout << "Loading features from: " << features_file << std::endl;
+	std::cout << "Loading features from: " << params.features_file << std::endl;
 	if (!LoadFeatures())
 	{
 		std::cout << "Failed to load features!" << std::endl;
 		return false;
 	}
 
-	std::cout << "Loading poses from: " << poses_file << std::endl;
+	std::cout << "Loading poses from: " << params.poses_file << std::endl;
 	if (!LoadPoses())
 	{
 		std::cout << "Failed to load poses!" << std::endl;
 		return false;
 	}
 
-	for (int i = 0; i < num_cameras; i++)
+	for (int i = 0; i < params.num_cameras; i++)
 	{
 		if (!ReadCalibrationFile(i))
 		{
@@ -40,16 +35,19 @@ bool InputDataset::Load()
 	}
 
 	SetFilenames();
+	FilterPoses();
+	BuildFeatureTracks();
+	ComputeDepthRange();
 
 	return true;
 }
 
 bool InputDataset::LoadPoints()
 {
-	std::ifstream points_file_stream(points_file, std::ios::in);
+	std::ifstream points_file_stream(params.points_file, std::ios::in);
 	if (!points_file_stream)
 	{
-		std::cout << "Failed to open file " << points_file << std::endl;
+		std::cout << "Failed to open file " << params.points_file << std::endl;
 		return false;
 	}
 
@@ -87,10 +85,10 @@ bool InputDataset::LoadPoints()
 
 bool InputDataset::LoadFeatures()
 {
-	std::ifstream features_file_stream(features_file, std::ios::in);
+	std::ifstream features_file_stream(params.features_file, std::ios::in);
 	if (!features_file_stream)
 	{
-		std::cout << "Failed to open file " << features_file << std::endl;
+		std::cout << "Failed to open file " << params.features_file << std::endl;
 		return false;
 	}
 
@@ -104,7 +102,7 @@ bool InputDataset::LoadFeatures()
 	images.resize(num_frames);
 	for (int i = 0; i < num_frames; i++)
 	{
-		images[i].resize(num_cameras);
+		images[i].resize(params.num_cameras);
 	}
 
 	features_file_stream.read((char*) &buff, sizeof(uint32_t));
@@ -161,10 +159,10 @@ bool InputDataset::LoadFeatures()
 
 bool InputDataset::LoadPoses()
 {
-	std::ifstream poses_file_stream(poses_file, std::ios::in);
+	std::ifstream poses_file_stream(params.poses_file, std::ios::in);
 	if (!poses_file_stream)
 	{
-		std::cout << "Failed to open file " << poses_file << std::endl;
+		std::cout << "Failed to open file " << params.poses_file << std::endl;
 		return false;
 	}
 
@@ -191,7 +189,7 @@ bool InputDataset::LoadPoses()
 
 	for (int i = 0; i < count; i++)
 	{
-		for (int j = 1; j < num_cameras; j++)
+		for (int j = 1; j < params.num_cameras; j++)
 		{
 			images[i][j].R = cv::Mat::eye(3, 3, CV_32F);
 			images[i][j].t = cv::Mat::eye(3, 1, CV_32F);
@@ -205,7 +203,7 @@ bool InputDataset::LoadPoses()
 
 bool InputDataset::ReadCalibrationFile(const int cam_id)
 {
-	const std::string filename = cameras_folder + cam_dictionary.at(cam_id) + "_R.json";
+	const std::string filename = params.cameras_folder + cam_dictionary.at(cam_id) + "_R.json";
 
 	std::cout << "Reading calibration data from " << filename << std::endl;
 
@@ -233,8 +231,8 @@ bool InputDataset::ReadCalibrationFile(const int cam_id)
 	cv::Mat_<float> K = cv::Mat::eye(3, 3, CV_32F);
 	K << f_x, 0, c_x, 0, f_y, c_y, 0, 0, 1;
 
-	std::cout << "Image size for camera " << cam_id << ": (" << width << ", " << height << ")" << std::endl;
-	std::cout << "Calibration matrix for camera " << cam_id << ": " << std::endl << K << std::endl;
+	// std::cout << "Image size for camera " << cam_id << ": (" << width << ", " << height << ")" << std::endl;
+	// std::cout << "Calibration matrix for camera " << cam_id << ": " << std::endl << K << std::endl;
 
 	for (int i = 0; i < num_frames; i++)
 	{
@@ -250,9 +248,9 @@ void InputDataset::SetFilenames()
 {
 	for (int i = 0; i < num_frames; i++)
 	{
-		for (int j = 0; j < num_cameras; j++)
+		for (int j = 0; j < params.num_cameras; j++)
 		{
-			const std::string path = images_folder + cam_dictionary.at(j);
+			const std::string path = params.images_folder + cam_dictionary.at(j);
 			std::stringstream filename;
     		filename << path << "/" << std::setw(8) << std::setfill('0') << i << ".jpg";
     		images[i][j].filename = filename.str();
@@ -260,70 +258,64 @@ void InputDataset::SetFilenames()
 	}
 }
 
-void InputDataset::FilterPoses(const double min_dist)
+void InputDataset::FilterPoses()
 {
 	int prev = 0;
 	idx_filt.push_back(prev); 
 
-	// for (int i = 1; i < images.size(); i++)
-	// {
-	// 	const double dist = ComputePoseDistance(images[prev][0].t, images[i][0].t);
-	// 	if (dist > min_dist)
-	// 	{
-	// 		prev = i;
-	// 		idx_filt.push_back(prev);
-	// 	}
-	// }
-
-	// BuildFeatureTracks();
-	// ComputeDepthRange();
+	for (int i = 1; i < images.size(); i++)
+	{
+		const double dist = ComputePoseDistance(images[prev][0].t, images[i][0].t);
+		if (dist > params.min_dist)
+		{
+			prev = i;
+			idx_filt.push_back(prev);
+		}
+	}
 }
 
-// void InputDataset::BuildFeatureTracks()
-// {
-// 	for (const auto& i : filt)
-// 	{
-// 		for (int j = 0; j < num_cameras; j++)
-// 		{
-// 			for (int k = 0; k < images[i][j].features.size(); k++)
-// 			{
-// 				const int point_id = images[i][j].features[k].point_idx;
-// 				const int uuid = j * num_frames + i;
-// 				points[point_id].image_idx.push_back(std::make_pair(uuid, k));
-// 			}
-// 		}
-// 	}
+void InputDataset::BuildFeatureTracks()
+{
+	for (const auto& i : idx_filt)
+	{
+		for (int j = 0; j < params.num_cameras; j++)
+		{
+			for (int k = 0; k < images[i][j].features.size(); k++)
+			{
+				const int point_id = images[i][j].features[k].point_idx;
+				const int uuid = j * num_frames + i;
+				points[point_id].image_idx.push_back(std::make_pair(uuid, k));
+			}
+		}
+	}
 
-// 	const auto lambda_size = [](const Point& p) { return p.image_idx.empty(); };
-// 	points.erase(std::remove_if(points.begin(), points.end(), lambda_size), points.end());
-// }
+	// The lines below are very tricky since they mess up with point indices
 
-// void InputDataset::ComputeDepthRange()
-// {
-// 	for (const auto& i : filt)
-// 	{
-// 		for (int j = 0; j < num_cameras; j++)
-// 		{
-// 			float max_depth = 0.0f;
-// 			float min_depth = std::numeric_limits<float>::max();
+	// const auto lambda_size = [](const Point& p) { return p.image_idx.empty(); };
+	// points.erase(std::remove_if(points.begin(), points.end(), lambda_size), points.end());
+}
 
-// 			for (const auto& f : images[i][j].features)
-// 			{
-// 				const int idx = f.point_idx;
-// 				const Point p_cam = TransformPointFromWorldToCam(images[i][j].R, images[i][j].t, points[idx]);
-// 				const float depth = p_cam.z;
-// 				if (depth < min_depth)
-// 				{
-// 					min_depth = depth;
-// 				}
-// 				if (depth > max_depth)
-// 				{
-// 					max_depth = depth;
-// 				}
-// 			}
+void InputDataset::ComputeDepthRange()
+{	
+	for (const auto& i : idx_filt)
+	{
+		// for (int j = 0; j < params.num_cameras; j++) // TODO
+		for (int j = 0; j < 1; j++)
+		{
+			std::vector<double> depths;
+			for (const auto& f : images[i][j].features)
+			{
+				const int idx = f.point_idx;
+				const Point p_cam = TransformPointFromWorldToCam(images[i][j].R, images[i][j].t, points[idx]);
+				depths.push_back(p_cam.z);
+			}
 
-// 			images[i][j].min_depth = min_depth;
-// 			images[i][j].max_depth = std::max(max_depth, 80.0f); // Fix
-// 		}
-// 	}
-// }
+			std::sort(depths.begin(), depths.end());
+			images[i][j].min_depth = std::min(params.min_depth, 0.75 * depths[0]);
+			const int limit_idx = static_cast<int>(0.9f * depths.size());
+			images[i][j].max_depth = std::min(params.max_depth, depths[limit_idx]);
+
+			// std::cout << "Depth range for image " << i << ": (" << images[i][j].min_depth << ", " << images[i][j].max_depth << ")" << std::endl;
+		}
+	}
+}

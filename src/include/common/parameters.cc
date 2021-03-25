@@ -26,18 +26,19 @@ bool Parameters::Load(const char* filename)
 	points_file = input_folder + d["points_file"].GetString();
 	features_file = input_folder + d["features_file"].GetString();
 
+	// Input processing
+
 	num_cameras = d["num_cameras"].GetInt();
-
-	// Keyframe selection
-
 	min_dist = d["min_dist"].GetDouble();
+	min_depth = d["min_depth"].GetDouble();
+	max_depth = d["max_depth"].GetDouble();
 
-	// // Clustering 
+	// Clustering 
 
-	// block_size = d["block_size"].GetInt();
-	// min_points = d["min_points"].GetInt();
-	// min_cameras = d["min_cameras"].GetInt();
-	// max_distance = static_cast<float>(d["max_distance"].GetDouble());
+	block_size = d["block_size"].GetInt();
+	min_points = d["min_points"].GetInt();
+	min_cameras = d["min_cameras"].GetInt();
+	max_distance = d["max_distance"].GetDouble();
 
 	// // Neighbors
 

@@ -8,6 +8,8 @@
 	"features_file": "features.bin",
 	"num_cameras": 6,
 	"min_dist": 1.0,
+	"min_depth": 5.0,
+	"max_depth": 80.0,
 	"block_size": 20,
 	"min_points": 100,
 	"min_cameras": 10,

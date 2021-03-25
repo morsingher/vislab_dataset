@@ -18,18 +18,19 @@ public:
 	std::string points_file;
 	std::string features_file;
 
+	// Input processing
+
 	int num_cameras;
-
-	// Keyframe selection
-
 	double min_dist;
+	double min_depth;
+	double max_depth;
 
-	// // Clustering
+	// Clustering
 
-	// int block_size;
-	// int min_points;
-	// int min_cameras;
-	// float max_distance;
+	int block_size;
+	int min_points;
+	int min_cameras;
+	double max_distance;
 
 	// // Neighbors
 
