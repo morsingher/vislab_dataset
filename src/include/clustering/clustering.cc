@@ -10,15 +10,12 @@ void Clustering::ComputeClusters()
 	AssignPointsToBlock();
 	GroupByPoints();
 
-	// // Step 2: process cameras
+	// Step 2: process cameras
 
-	// AssignCamerasToBlock(max_distance);
+	AssignCamerasToBlock();
 	// GroupByCameras(min_cameras, num_blocks_x);
 
-	// // Remove empty clusters
-
-	// const auto lambda_size = [](const Cluster& c){ return c.point_idx.empty() || c.camera_idx.empty(); };
-	// clusters.erase(std::remove_if(clusters.begin(), clusters.end(), lambda_size), clusters.end());
+	// Step 3: locally optimize each cluster
 
 	PrintReport();
 }
@@ -155,25 +152,54 @@ void Clustering::GroupByPoints()
 	std::cout << "After grouping, there are " << count << " non-empty clusters" << std::endl;
 }
 
+void Clustering::AssignCamerasToBlock()
+{
+	for (auto& c : clusters) // Cluster
+	{
+		for (const auto& p : c.point_idx) // Points in the cluster 
+		{
+			for (const auto& cam : data.points[p].image_idx) // Cameras that see the point
+			{
+				const int uuid = cam.first;
+				const int sensor = uuid / data.num_frames;
+				const int frame = uuid - sensor * data.num_frames;
+
+				c.camera_idx.insert(uuid);
+
+				// const Point p_cam = TransformPointFromWorldToCam(data.images[frame][sensor].R, 
+				// 												 data.images[frame][sensor].t, 
+				// 												 data.points[p]);
+				// if (p_cam.z < max_distance)
+				// {
+				// 	c.camera_idx.insert(uuid); // This should remove duplicates automatically
+				// }
+			}
+		}
+	}
+}
+
 void Clustering::PrintReport()
 {
 	std::cout << std::endl;
-	
-	// int cam_count = 0;
+
+	int cam_count = 0;
 	int point_count = 0;
 	for (int i = 0; i < clusters.size(); i++)
 	{
 		if (clusters[i].point_idx.size() > 0)
 		{
 			const int num_points = clusters[i].point_idx.size();
-			// const int num_cams = clusters[i].camera_idx.size();
-			std::cout << "Cluster " << i << " has " << num_points << " points" << std::endl;
-			// cam_count += num_cams;
+			const int num_cameras = clusters[i].camera_idx.size();
+			std::cout << "Cluster " << i << " has " << num_points << " points and " << num_cameras << " cameras" << std::endl;
+			cam_count += num_cameras;
 			point_count += num_points;
 		}
 	}
-	std::cout << std::endl << "Total points: " << point_count << std::endl << std::endl;
-	// std::cout << "Total cameras: " << cam_count << std::endl << std::endl;
+	std::cout << std::endl << "Total points: " << point_count << std::endl;
+	std::cout << "Total cameras: " << cam_count << std::endl;
+
+	// const float ratio = cam_count / static_cast<float>(data.num_cameras * data.idx_filt.size());
+	// std::cout << "Cameras ratio: " << ratio << std::endl << std::endl;
 }
 
 // void Clustering::ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0)
@@ -268,30 +294,6 @@ void Clustering::PrintReport()
 // 	}
 
 // 	return true;
-// }
-
-// void Clustering::AssignCamerasToBlock(const float max_distance)
-// {
-// 	for (auto& c : clusters) // Cluster
-// 	{
-// 		for (const auto& p : c.point_idx) // Points in the cluster 
-// 		{
-// 			for (const auto& cam : data.points[p].image_idx) // Cameras that see the point
-// 			{
-// 				const int uuid = cam.first;
-// 				const int sensor = uuid / data.num_frames;
-// 				const int frame = uuid - sensor * data.num_frames;
-
-// 				const Point p_cam = TransformPointFromWorldToCam(data.images[frame][sensor].R, 
-// 																 data.images[frame][sensor].t, 
-// 																 data.points[p]);
-// 				if (p_cam.z < max_distance)
-// 				{
-// 					c.camera_idx.insert(uuid); // This should remove duplicates automatically
-// 				}
-// 			}
-// 		}
-// 	}
 // }
 
 // void Clustering::GroupByCameras(const int min_cameras, const int num_blocks_x)

@@ -74,7 +74,7 @@ typedef std::vector<Image> Frame;
 struct Cluster
 {
 	std::vector<int> point_idx;
-	// std::set<int> camera_idx; // UUID
+	std::set<int> camera_idx; // UUID, std::set avoid duplicates
 	// std::unordered_map<int, std::vector<Neighbor>> neighbors;
 };
 
