@@ -10,13 +10,13 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
 
-include_directories(${OpenCV_INCLUDE_DIRS} src/include)
+include_directories(${OpenCV_INCLUDE_DIRS} 
+					src/include/common
+					src/include/io)
 
 add_executable(multi_view_clustering 
-			   src/include/input_dataset.cc 
-			   src/include/math_utils.cc
-			   src/include/clustering.cc
-			   src/include/parameters.cc
+			   src/include/common/parameters.cc
+			   src/include/io/input_dataset.cc
 			   src/main.cc)
 
 target_link_libraries(multi_view_clustering ${OpenCV_LIBS} Threads::Threads)
