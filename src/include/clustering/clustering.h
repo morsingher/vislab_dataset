@@ -26,21 +26,11 @@ private:
 	void GroupByCameras();
 
 	void PrintReport();
+	int CountNonEmptyClusters();
 
-// 	void ComputeNeighbors(const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
-// 	bool WriteClustersFiles(const std::string& output_path, const int num_neighbors);
-// 	bool WriteColmapFiles(const std::string& output_path);
-	
-// 	void ComputeNeighborsForCluster(const int i, const int num_neighbors, const float sigma_0, const float sigma_1, const float theta_0);
-// 	float ComputeViewSelectionScore(const std::vector<Feature>& idx, const int ref_frame, const int ref_sensor, const int src_frame, const int src_sensor, const float sigma_0, const float sigma_1, const float theta_0);
-	
-// 	bool WriteCamerasFiles(const std::string& path, const int idx);
-// 	bool WriteNeighborsFile(const std::string& path, const int idx, const int num_neighbors);
-// 	bool WriteImages(const std::string& path, const int idx);
-
-// 	bool WriteColmapCamerasFile(const std::string& path, const int idx);
-// 	bool WriteColmapImagesFile(const std::string& path, const int idx);
-// 	bool WriteColmapPointsFile(const std::string& path, const int idx);
+// 	void ComputeNeighbors();
+// 	void ComputeNeighborsForCluster(const int i);
+// 	float ComputeViewSelectionScore(const std::vector<Feature>& idx, const int ref_frame, const int ref_sensor, const int src_frame, const int src_sensor);
 };
 
 #endif

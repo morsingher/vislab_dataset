@@ -13,7 +13,7 @@ public:
 	std::vector<Point> points;
 	std::vector<Frame> images;
 	std::vector<int> idx_filt;
-	int num_frames, num_cameras, num_points;
+	int num_frames, num_points;
 
 private:
 
