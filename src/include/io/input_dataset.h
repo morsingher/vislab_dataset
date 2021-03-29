@@ -41,6 +41,8 @@ private:
 		{4, "BL"},
 		{5, "BR"},
 	};
+
+	cv::Mat_<float> t_ref, R_ref;
 };
 
 #endif

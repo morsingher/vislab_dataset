@@ -15,6 +15,24 @@ Point TransformPointFromWorldToCam(const cv::Mat_<float>& R, const cv::Mat_<floa
 	return Point(p_cam(0,0), p_cam(1,0), p_cam(2,0));
 }
 
+cv::Mat_<float> RotationMatrixFromEulerAngles(const double roll, const double pitch, const double yaw)
+{
+	cv::Mat_<float> R = cv::Mat::eye(3, 3, CV_32F);
+
+	double cr = std::cos(roll);
+	double sr = std::sin(roll);
+	double cp = std::cos(pitch);
+	double sp = std::sin(pitch);
+	double cy = std::cos(yaw);
+	double sy = std::sin(yaw);
+
+	R << cr * cp, sr * sy - cr * sp * cy, cr * sp * sy + sp * cy,
+		 sp, cp * cy, -cp * sy,
+		 -sr * cp, sr * sp * cy + cr * sy, -sr * sp * sy + cr * cy; 
+
+	return R;
+}
+
 // cv::Point2f ObservePoint(const Point& p, const cv::Mat_<float>& K)
 // {
 // 	const float u = K(0,0) * (p.x / p.z) + K(0,2);

@@ -5,6 +5,7 @@
 
 float ComputePoseDistance(const cv::Mat_<float>& t1, const cv::Mat_<float>& t2);
 Point TransformPointFromWorldToCam(const cv::Mat_<float>& R, const cv::Mat_<float>& t, const Point& p);
+cv::Mat_<float> RotationMatrixFromEulerAngles(const double roll, const double pitch, const double yaw);
 
 // cv::Point2f ObservePoint(const Point& p, const cv::Mat_<float>& K);
 

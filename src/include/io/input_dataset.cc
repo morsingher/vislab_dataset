@@ -241,6 +241,32 @@ bool InputDataset::ReadCalibrationFile(const int cam_id)
 		images[i][cam_id].height = height;
 	}
 
+	const auto& extrinsics = d["position"];
+	const double x = extrinsics[0].GetDouble();
+	const double y = extrinsics[1].GetDouble();
+	const double z = extrinsics[2].GetDouble();
+	const double roll = extrinsics[3].GetDouble();
+	const double pitch = extrinsics[4].GetDouble();
+	const double yaw = extrinsics[5].GetDouble();
+
+	if (cam_id == 0)
+	{
+		t_ref = cv::Mat::zeros(3, 1, CV_32F);
+		t_ref << x, y, z;
+		R_ref = RotationMatrixFromEulerAngles(roll, pitch, yaw);
+	}
+	else
+	{
+		cv::Mat_<float> t_src = cv::Mat::zeros(3, 1, CV_32F);
+		t_src << x, y, z;
+		cv::Mat_<float> R_src = RotationMatrixFromEulerAngles(roll, pitch, yaw);
+		for (int i = 0; i < num_frames; i++)
+		{
+			images[i][cam_id].t = R_ref.inv() * (t_src - t_ref) + images[i][0].t;
+			images[i][cam_id].R = R_ref.inv() * R_src * images[i][0].R;
+		}
+	}
+
 	return true;
 }
 
